@@ -29,7 +29,7 @@ TLDR_PROMPT = (Path(__file__).parent / "prompts" / "tldr.md").read_text()
 
 def generate_tldr(
     document_path: Path,
-    model_name: str = "gpt-4.1-nano",
+    model_name: str | None = None,
     max_chars: int = 100000,
 ) -> str:
     """
@@ -143,11 +143,16 @@ def main():
     parser.add_argument("--output", "-o", help="Output file path")
     parser.add_argument(
         "--model",
-        default="gpt-4.1-nano",
-        help="Model name (default: gpt-4.1-nano)"
+        default=None,
+        help="Model name (defaults to the active provider's selected model)"
     )
 
     args = parser.parse_args()
+    try:
+        from opendraft.cli import apply_saved_runtime_config
+    except ImportError:
+        from cli import apply_saved_runtime_config
+    apply_saved_runtime_config()
     document_path = Path(args.document)
 
     if not document_path.exists():

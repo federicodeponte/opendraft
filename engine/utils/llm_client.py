@@ -11,9 +11,9 @@ from types import SimpleNamespace
 from typing import Any, Optional
 
 try:
-    from config import get_config
+    from config import get_config, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL
 except ImportError:  # pragma: no cover - package-relative fallback
-    from ..config import get_config
+    from ..config import get_config, DEFAULT_OPENAI_MODEL, DEFAULT_GEMINI_MODEL
 
 try:
     from .gemini_client import GeminiModelWrapper
@@ -85,11 +85,25 @@ def build_model_client(model_override: Optional[str] = None, provider_override: 
     provider = (provider_override or cfg.model.provider or os.getenv("AI_PROVIDER", "gemini")).strip().lower()
     if provider in {"codex", "openai-codex"}:
         provider = "openai"
-    model_name = model_override or cfg.model.model_name
-    if provider == "openai" and "gemini" in model_name.lower():
-        model_name = os.getenv("OPENAI_MODEL", "gpt-4.1-nano")
-    if provider == "gemini" and ("gpt" in model_name.lower() or "openai" in model_name.lower()):
-        model_name = os.getenv("GEMINI_MODEL", "gemini-3-pro-preview")
+
+    if provider == "openai":
+        model_name = (
+            model_override
+            or os.getenv("OPENAI_MODEL")
+            or cfg.model.model_name
+            or DEFAULT_OPENAI_MODEL
+        )
+        if "gemini" in model_name.lower():
+            model_name = os.getenv("OPENAI_MODEL") or cfg.model.model_name or DEFAULT_OPENAI_MODEL
+    else:
+        model_name = (
+            model_override
+            or os.getenv("GEMINI_MODEL")
+            or cfg.model.model_name
+            or DEFAULT_GEMINI_MODEL
+        )
+        if "gpt" in model_name.lower() or "openai" in model_name.lower():
+            model_name = os.getenv("GEMINI_MODEL") or cfg.model.model_name or DEFAULT_GEMINI_MODEL
 
     if provider == "gemini":
         try:

@@ -14,7 +14,7 @@ def _default_model_name() -> str:
 
     provider = (os.getenv('AI_PROVIDER', 'gemini').strip().lower())
     if provider in {'codex', 'openai-codex', 'openai'}:
-        return os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
+        return os.getenv('OPENAI_MODEL', 'gpt-5.4-mini')
     return os.getenv('GEMINI_MODEL', 'gemini-3-flash-preview')
 
 

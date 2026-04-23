@@ -33,6 +33,18 @@ except ImportError:
     pass
 
 
+DEFAULT_GEMINI_MODEL = 'gemini-3-pro-preview'
+DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini'
+OPENAI_CODEX_MODELS = [
+    'gpt-5.4-mini',
+    'gpt-5.4',
+    'gpt-5.3-codex',
+    'gpt-5.2',
+    'gpt-5.3-codex-spark',
+]
+OPENAI_LEGACY_MODELS = ['gpt-4.1-nano']
+
+
 @dataclass
 class ModelConfig:
     """
@@ -48,9 +60,9 @@ class ModelConfig:
     )
     model_name: str = field(
         default_factory=lambda: (
-            os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
+            os.getenv('OPENAI_MODEL', DEFAULT_OPENAI_MODEL)
             if (os.getenv('AI_PROVIDER', 'gemini').strip().lower() in {'openai', 'codex', 'openai-codex'})
-            else os.getenv('GEMINI_MODEL', 'gemini-3-pro-preview')
+            else os.getenv('GEMINI_MODEL', DEFAULT_GEMINI_MODEL)
         )
     )
     temperature: float = 0.7
@@ -73,9 +85,7 @@ class ModelConfig:
             'gemini-1.5-pro',
         ]
 
-        valid_openai_models = [
-            'gpt-4.1-nano',
-        ]
+        valid_openai_models = OPENAI_CODEX_MODELS + OPENAI_LEGACY_MODELS
 
         if self.provider == 'gemini' and self.model_name not in valid_gemini_models:
             raise ValueError(

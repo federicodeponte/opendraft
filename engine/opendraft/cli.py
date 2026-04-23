@@ -50,6 +50,11 @@ from pathlib import Path
 # Lazy import for version (fast, local file)
 from opendraft.version import __version__
 
+try:
+    from config import DEFAULT_OPENAI_MODEL, OPENAI_CODEX_MODELS
+except ImportError:  # pragma: no cover - package-relative fallback
+    from ..config import DEFAULT_OPENAI_MODEL, OPENAI_CODEX_MODELS
+
 # Background module preloader for faster generation start
 _preload_future = None
 
@@ -329,6 +334,29 @@ def get_active_auth_mode() -> str:
     return auth_mode
 
 
+def get_active_model(provider: str | None = None) -> str:
+    """Return the active model for the selected provider."""
+    provider = (provider or get_active_provider()).strip().lower()
+    saved = get_saved_config()
+
+    if provider in {'codex', 'openai-codex'}:
+        provider = 'openai'
+
+    if provider == 'openai':
+        candidate = os.getenv('OPENAI_MODEL') or saved.get('openai_model') or saved.get('model_name')
+        if candidate and ('gpt' in candidate.lower() or 'openai' in candidate.lower()):
+            return candidate
+        return DEFAULT_OPENAI_MODEL
+
+    if provider == 'gemini':
+        candidate = os.getenv('GEMINI_MODEL') or saved.get('gemini_model') or saved.get('model_name')
+        if candidate and 'gemini' in candidate.lower():
+            return candidate
+        return 'gemini-3-pro-preview'
+
+    return saved.get('model_name') or DEFAULT_OPENAI_MODEL
+
+
 def get_provider_display_label(provider: str | None = None) -> str:
     """Return a UI label that includes the provider auth mode when useful."""
     provider = (provider or get_active_provider()).strip().lower()
@@ -354,12 +382,28 @@ def apply_saved_runtime_config() -> None:
         auth_mode = 'openai-codex'
     os.environ['OPENAI_AUTH_MODE'] = auth_mode
 
+    try:
+        from config import get_config as get_runtime_config
+    except ImportError:  # pragma: no cover - package-relative fallback
+        from ..config import get_config as get_runtime_config
+
+    cfg = get_runtime_config()
+    cfg.model.provider = provider
+
     if provider == 'gemini':
+        model_candidate = saved.get('gemini_model') or saved.get('model_name') or os.getenv('GEMINI_MODEL')
+        model_name = model_candidate if model_candidate and 'gemini' in model_candidate.lower() else 'gemini-3-pro-preview'
         api_key = saved.get('google_api_key') or saved.get('gemini_api_key') or os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+        os.environ['GEMINI_MODEL'] = model_name
+        cfg.model.model_name = model_name
         if api_key:
             os.environ['GOOGLE_API_KEY'] = api_key
             os.environ['GEMINI_API_KEY'] = api_key
     elif provider == 'openai':
+        model_candidate = saved.get('openai_model') or saved.get('model_name') or os.getenv('OPENAI_MODEL')
+        model_name = model_candidate if model_candidate and ('gpt' in model_candidate.lower() or 'openai' in model_candidate.lower()) else DEFAULT_OPENAI_MODEL
+        os.environ['OPENAI_MODEL'] = model_name
+        cfg.model.model_name = model_name
         if auth_mode == 'openai-codex':
             codex_key = import_codex_auth_from_disk(save_to_config=True)
             if codex_key:
@@ -521,9 +565,52 @@ def has_api_key(provider: str | None = None):
     return bool(get_provider_key(provider))
 
 
+def is_provider_ready() -> bool:
+    """Check whether the active provider has usable runtime credentials."""
+    apply_saved_runtime_config()
+    provider = get_active_provider()
+    auth_mode = get_active_auth_mode()
+
+    if provider == 'gemini':
+        return bool(get_provider_key('gemini'))
+
+    if provider == 'openai' and auth_mode == 'openai-codex':
+        if not os.getenv('OPENAI_API_KEY'):
+            import_codex_auth_from_disk(save_to_config=True)
+        return bool(os.getenv('OPENAI_API_KEY'))
+
+    if provider == 'openai':
+        return bool(get_provider_key('openai'))
+
+    return bool(get_provider_key(provider))
+
+
 def get_api_key(provider: str | None = None):
     """Get the selected provider API key from environment or config."""
     return get_provider_key(provider)
+
+
+def ensure_provider_ready_or_setup() -> bool:
+    """Run setup automatically if the active provider is not ready."""
+    c = Colors
+    if is_provider_ready():
+        return True
+
+    print(f"  {c.YELLOW}!{c.RESET} No usable provider credentials configured.")
+    print()
+    if not run_setup():
+        return False
+
+    clear_screen()
+    print_header()
+    apply_saved_runtime_config()
+
+    if not is_provider_ready():
+        print(f"  {c.YELLOW}!{c.RESET} Provider setup did not produce usable credentials.")
+        print()
+        return False
+
+    return True
 
 
 def clear_screen():
@@ -573,6 +660,7 @@ def print_header():
     auth_mode = get_active_auth_mode() if provider == 'openai' else 'api_key'
     if provider == 'openai':
         print(f"  {c.GRAY}Auth mode:{c.RESET} {auth_mode.replace('-', ' ').title()}")
+    print(f"  {c.GRAY}Model:{c.RESET} {get_active_model(provider)}")
     print()
 
 
@@ -702,6 +790,53 @@ def run_setup():
     config = get_saved_config()
     config['provider'] = provider
     config['auth_mode'] = auth_mode
+
+    selected_model = None
+    if provider == 'openai':
+        print()
+        current_model = get_active_model('openai')
+        openai_model_labels = {
+            'gpt-5.4-mini': 'GPT-5.4 Mini',
+            'gpt-5.4': 'GPT-5.4',
+            'gpt-5.3-codex': 'GPT-5.3 Codex',
+            'gpt-5.2': 'GPT-5.2',
+            'gpt-5.3-codex-spark': 'GPT-5.3 Codex Spark',
+        }
+        openai_model_options = [(openai_model_labels[model], model) for model in OPENAI_CODEX_MODELS if model in openai_model_labels]
+        if current_model == 'gpt-4.1-nano':
+            openai_model_options.append(("GPT-4.1 Nano (legacy)", "gpt-4.1-nano"))
+        default_model = next(
+            (idx for idx, (_, model) in enumerate(openai_model_options) if model == current_model),
+            0,
+        )
+        selected_model = select_option(
+            "Choose OpenAI/Codex model",
+            openai_model_options,
+            default=default_model,
+        )
+        if selected_model is None:
+            return False
+        config['openai_model'] = selected_model
+        config['model_name'] = selected_model
+        os.environ['OPENAI_MODEL'] = selected_model
+        try:
+            from config import get_config as get_runtime_config
+        except ImportError:  # pragma: no cover - package-relative fallback
+            from ..config import get_config as get_runtime_config
+        runtime_cfg = get_runtime_config()
+        runtime_cfg.model.model_name = selected_model
+    elif provider == 'gemini':
+        selected_model = get_active_model('gemini')
+        config['gemini_model'] = selected_model
+        config['model_name'] = selected_model
+        os.environ['GEMINI_MODEL'] = selected_model
+        try:
+            from config import get_config as get_runtime_config
+        except ImportError:  # pragma: no cover - package-relative fallback
+            from ..config import get_config as get_runtime_config
+        runtime_cfg = get_runtime_config()
+        runtime_cfg.model.model_name = selected_model
+
     if api_key:
         config[saved_key_name] = api_key
     if provider == 'gemini' and api_key:
@@ -720,6 +855,7 @@ def run_setup():
     print()
     print(f"  {c.GREEN}✓{c.RESET} Saved provider: {get_provider_label(provider)}")
     print(f"  {c.GREEN}✓{c.RESET} Auth mode: {auth_mode.replace('-', ' ').title()}")
+    print(f"  {c.GREEN}✓{c.RESET} Model: {selected_model or get_active_model(provider)}")
     if api_key:
         print(f"  {c.GREEN}✓{c.RESET} API key saved to {c.GRAY}~/.opendraft/config.json{c.RESET}")
     else:
@@ -768,24 +904,14 @@ def run_interactive():
     """Run interactive paper generation."""
     c = Colors
     clear_screen()
+    apply_saved_runtime_config()
     print_header()
 
     # Start preloading heavy modules in background while user fills options
     start_preloading()
 
-    apply_saved_runtime_config()
-
-    # Check for API key
-    if not has_api_key():
-        print(f"  {c.YELLOW}!{c.RESET} No API key configured.")
-        print()
-        if not run_setup():
-            return 1
-        clear_screen()
-        print_header()
-    else:
-        if not os.getenv('GOOGLE_API_KEY'):
-            os.environ['GOOGLE_API_KEY'] = get_api_key()
+    if not ensure_provider_ready_or_setup():
+        return 1
 
     print(f"  {c.BOLD}New Paper{c.RESET}")
     print_divider()
@@ -1217,13 +1343,9 @@ def run_revise_command(argv):
     print(f"  {c.GRAY}Instructions:{c.RESET} {args.instructions[:50]}{'...' if len(args.instructions) > 50 else ''}")
     print()
 
-    # Ensure API key is set
-    if not has_api_key():
-        print(f"  {c.YELLOW}!{c.RESET} Run {c.BOLD}opendraft setup{c.RESET} first.\n")
+    # Ensure provider is ready
+    if not ensure_provider_ready_or_setup():
         return 1
-
-    if not os.getenv('GOOGLE_API_KEY'):
-        os.environ['GOOGLE_API_KEY'] = get_api_key()
 
     try:
         sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -1537,16 +1659,11 @@ def main():
 
     # Quick mode
     clear_screen()
+    apply_saved_runtime_config()
     print_header()
 
-    apply_saved_runtime_config()
-
-    if not has_api_key():
-        print(f"  {c.YELLOW}!{c.RESET} Run {c.BOLD}opendraft setup{c.RESET} first.\n")
+    if not ensure_provider_ready_or_setup():
         return 1
-
-    if not os.getenv('GOOGLE_API_KEY'):
-        os.environ['GOOGLE_API_KEY'] = get_api_key()
 
     # Language display names for quick mode
     quick_lang_names = {

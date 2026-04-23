@@ -30,7 +30,7 @@ DIGEST_PROMPT = (Path(__file__).parent / "prompts" / "digest.md").read_text()
 
 def generate_script(
     document_path: Path,
-    model_name: str = "gpt-4.1-nano",
+    model_name: str | None = None,
     max_chars: int = 100000,
 ) -> tuple[str, dict]:
     """
@@ -73,7 +73,7 @@ Generate a 150-180 word narration script. Output ONLY the script text, nothing e
     metadata = {
         "document": document_path.name,
         "word_count": len(script.split()),
-        "model": model_name,
+        "model": getattr(model, 'model_name', model_name or 'unknown'),
     }
 
     return script, metadata
@@ -104,7 +104,7 @@ def generate_digest(
     document_path: Path,
     output_dir: Optional[Path] = None,
     voice: str = "rachel",
-    model_name: str = "gpt-4.1-nano",
+    model_name: str | None = None,
     generate_audio: bool = True,
 ) -> dict:
     """
@@ -177,11 +177,16 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default="gpt-4.1-nano",
-        help="Model name (default: gpt-4.1-nano)"
+        default=None,
+        help="Model name (defaults to the active provider's selected model)"
     )
 
     args = parser.parse_args()
+    try:
+        from opendraft.cli import apply_saved_runtime_config
+    except ImportError:
+        from cli import apply_saved_runtime_config
+    apply_saved_runtime_config()
     document_path = Path(args.document)
 
     if not document_path.exists():

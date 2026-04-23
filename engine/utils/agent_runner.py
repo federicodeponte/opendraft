@@ -642,7 +642,7 @@ def research_citations_via_api(
 
         # Initialize deep research planner
         planner = DeepResearchPlanner(
-            gemini_model=model,
+            llm_model=model,
             min_sources=min_sources_deep,
             verbose=verbose
         )
