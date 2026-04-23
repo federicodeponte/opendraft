@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ABOUTME: Autonomous deep research planner with seed reference expansion
-ABOUTME: Two-phase approach: planning (Gemini) → execution (orchestrator)
+ABOUTME: Two-phase approach: planning (active provider LLM) → execution (orchestrator)
 """
 
 import re
@@ -51,11 +51,9 @@ from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 try:
-    from google import genai
-    from .gemini_client import GeminiModelWrapper
+    from .llm_client import build_model_client
 except ImportError:
-    genai = None
-    GeminiModelWrapper = None
+    build_model_client = None
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +62,11 @@ class DeepResearchPlanner:
     """
     Autonomous research planner for comprehensive literature reviews.
 
-    Uses Gemini to create research strategy from seed references,
+    Uses the active provider LLM to create research strategy from seed references,
     then executes queries through citation orchestrator.
 
     Two-phase approach:
-    1. Planning: Gemini autonomously plans research strategy
+    1. Planning: active provider autonomously plans research strategy
     2. Execution: Orchestrator runs planned queries through fallback chain
 
     Benefits:
@@ -80,7 +78,7 @@ class DeepResearchPlanner:
 
     def __init__(
         self,
-        gemini_model: Optional[Any] = None,
+        llm_model: Optional[Any] = None,
         api_key: Optional[str] = None,
         min_sources: int = 50,
         verbose: bool = True
@@ -89,33 +87,24 @@ class DeepResearchPlanner:
         Initialize deep research planner.
 
         Args:
-            gemini_model: Gemini model for planning (optional, will create if None)
-            api_key: Google API key (defaults to GOOGLE_API_KEY env var)
+            llm_model: Provider-agnostic model wrapper for planning (optional)
+            api_key: Legacy API-key arg retained for compatibility
             min_sources: Minimum number of sources to research
             verbose: Print progress to console
         """
         self.min_sources = min_sources
         self.verbose = verbose
 
-        # Initialize Gemini for planning
-        if gemini_model:
-            self.model = gemini_model
+        # Initialize active provider for planning
+        if llm_model:
+            self.model = llm_model
         else:
-            if not genai:
+            if build_model_client is None:
                 raise ImportError(
-                    "google-genai not installed. "
-                    "Run: pip install google-genai>=1.0.0"
+                    "Provider client helpers are unavailable. "
+                    "Run the app from the project environment."
                 )
-
-            api_key = api_key or os.getenv('GOOGLE_API_KEY')
-            if not api_key:
-                raise ValueError(
-                    "GOOGLE_API_KEY not found. Set via environment variable or constructor."
-                )
-
-            client = genai.Client(api_key=api_key)
-            # Use Gemini 3 Flash Preview for fast research planning
-            self.model = GeminiModelWrapper(client, 'gemini-3-flash-preview')
+            self.model = build_model_client()
 
     def create_research_plan(
         self,
@@ -152,7 +141,7 @@ class DeepResearchPlanner:
         prompt = self._build_planning_prompt(topic, scope, seed_references)
 
         try:
-            # Call Gemini for autonomous planning with safety filter retry and timeout
+            # Call active provider for autonomous planning with safety filter retry and timeout
             max_retries = 3
             current_topic = topic
             plan_text = None

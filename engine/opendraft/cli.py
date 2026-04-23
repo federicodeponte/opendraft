@@ -70,9 +70,10 @@ def start_preloading():
         _preload_future = executor.submit(_preload_modules)
         executor.shutdown(wait=False)
 
-# Config directory for storing API keys
+# Config directory for storing API keys and auth metadata
 CONFIG_DIR = Path.home() / '.opendraft'
 CONFIG_FILE = CONFIG_DIR / 'config.json'
+AUTH_FILE = CONFIG_DIR / 'auth.json'
 
 # ANSI color codes
 class Colors:
@@ -267,7 +268,7 @@ def get_saved_config():
     if CONFIG_FILE.exists():
         try:
             return json.loads(CONFIG_FILE.read_text())
-        except:
+        except Exception:
             return {}
     return {}
 
@@ -278,21 +279,251 @@ def save_config(config):
     CONFIG_FILE.write_text(json.dumps(config, indent=2))
 
 
-def has_api_key():
-    """Check if API key is configured."""
-    if os.getenv('GOOGLE_API_KEY'):
-        return True
-    config = get_saved_config()
-    return bool(config.get('google_api_key'))
+def get_saved_auth() -> dict:
+    """Load provider auth metadata/tokens stored separately from config."""
+    if AUTH_FILE.exists():
+        try:
+            return json.loads(AUTH_FILE.read_text())
+        except Exception:
+            return {}
+    return {}
 
 
-def get_api_key():
-    """Get API key from environment or config."""
-    key = os.getenv('GOOGLE_API_KEY')
-    if key:
-        return key
-    config = get_saved_config()
-    return config.get('google_api_key', '')
+def save_auth(auth_payload: dict) -> None:
+    """Persist provider auth metadata/tokens outside config.json."""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    AUTH_FILE.write_text(json.dumps(auth_payload, indent=2))
+
+
+def clear_saved_openai_api_key(config: dict) -> dict:
+    """Remove stale OpenAI API-key-style fields when using session auth."""
+    config.pop('openai_api_key', None)
+    return config
+
+
+def get_active_provider() -> str:
+    """Return the currently selected provider from env or saved config."""
+    provider = (os.getenv('AI_PROVIDER') or get_saved_config().get('provider') or 'gemini').strip().lower()
+    if provider in {'codex', 'openai-codex'}:
+        return 'openai'
+    return provider
+
+
+def get_provider_label(provider: str) -> str:
+    """Friendly provider label for the UI."""
+    labels = {
+        'gemini': 'Google Gemini',
+        'openai': 'OpenAI',
+    }
+    return labels.get(provider, provider.title())
+
+
+def get_active_auth_mode() -> str:
+    """Return the currently selected auth mode for the active provider."""
+    saved = get_saved_config()
+    auth_mode = (os.getenv('OPENAI_AUTH_MODE') or saved.get('auth_mode') or 'api_key').strip().lower()
+    if auth_mode in {'api', 'apikey', 'api-key'}:
+        return 'api_key'
+    if auth_mode in {'codex', 'openai-codex', 'browser'}:
+        return 'openai-codex'
+    return auth_mode
+
+
+def get_provider_display_label(provider: str | None = None) -> str:
+    """Return a UI label that includes the provider auth mode when useful."""
+    provider = (provider or get_active_provider()).strip().lower()
+    auth_mode = get_active_auth_mode() if provider == 'openai' else 'api_key'
+    if provider == 'openai' and auth_mode == 'openai-codex':
+        return 'OpenAI Codex'
+    return get_provider_label(provider)
+
+
+def apply_saved_runtime_config() -> None:
+    """Sync saved config into environment variables for runtime use."""
+    saved = get_saved_config()
+    saved_auth = get_saved_auth()
+    provider = (saved.get('provider') or os.getenv('AI_PROVIDER') or 'gemini').strip().lower()
+    if provider in {'codex', 'openai-codex'}:
+        provider = 'openai'
+    os.environ['AI_PROVIDER'] = provider
+
+    auth_mode = (saved.get('auth_mode') or os.getenv('OPENAI_AUTH_MODE') or 'api_key').strip().lower()
+    if auth_mode in {'api', 'apikey', 'api-key'}:
+        auth_mode = 'api_key'
+    elif auth_mode in {'codex', 'openai-codex', 'browser'}:
+        auth_mode = 'openai-codex'
+    os.environ['OPENAI_AUTH_MODE'] = auth_mode
+
+    if provider == 'gemini':
+        api_key = saved.get('google_api_key') or saved.get('gemini_api_key') or os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+        if api_key:
+            os.environ['GOOGLE_API_KEY'] = api_key
+            os.environ['GEMINI_API_KEY'] = api_key
+    elif provider == 'openai':
+        if auth_mode == 'openai-codex':
+            codex_key = import_codex_auth_from_disk(save_to_config=True)
+            if codex_key:
+                os.environ['OPENAI_API_KEY'] = codex_key
+            else:
+                auth_token = _extract_string_credential(saved_auth)
+                if auth_token:
+                    os.environ['OPENAI_API_KEY'] = auth_token
+        else:
+            api_key = saved.get('openai_api_key') or os.getenv('OPENAI_API_KEY')
+            if api_key:
+                os.environ['OPENAI_API_KEY'] = api_key
+
+
+def get_codex_home() -> Path:
+    """Return the Codex CLI home directory."""
+    return Path(os.getenv('CODEX_HOME') or (Path.home() / '.codex'))
+
+
+def get_codex_binary() -> str | None:
+    """Resolve the Codex CLI binary path if installed."""
+    import shutil
+
+    for candidate in (shutil.which('codex'), Path.home() / '.local' / 'node_modules' / '.bin' / 'codex', Path.home() / '.npm-global' / 'bin' / 'codex'):
+        if candidate and Path(candidate).exists():
+            return str(candidate)
+    return None
+
+
+def ensure_codex_file_auth_storage(codex_home: Path) -> Path:
+    """Ensure Codex stores credentials in local files so Hermes/OpenDraft can import them."""
+    codex_home.mkdir(parents=True, exist_ok=True)
+    config_path = codex_home / 'config.toml'
+    line = 'cli_auth_credentials_store = "file"\n'
+    if config_path.exists():
+        current = config_path.read_text(encoding='utf-8')
+        if 'cli_auth_credentials_store' not in current:
+            current = current.rstrip() + '\n' + line
+            config_path.write_text(current, encoding='utf-8')
+    else:
+        config_path.write_text(line, encoding='utf-8')
+    return config_path
+
+
+def _tokenish(value: str) -> bool:
+    return isinstance(value, str) and len(value.strip()) >= 20
+
+
+def _extract_string_credential(payload):
+    """Recursively search nested auth payloads for a usable credential string."""
+    preferred_keys = (
+        'openai_api_key', 'api_key', 'apikey', 'access_token', 'token', 'bearer_token',
+        'session_token', 'refresh_token', 'key', 'secret', 'auth_token', 'credential',
+    )
+
+    if isinstance(payload, dict):
+        for key in preferred_keys:
+            value = payload.get(key)
+            if _tokenish(value):
+                return value.strip()
+        for value in payload.values():
+            found = _extract_string_credential(value)
+            if found:
+                return found
+    elif isinstance(payload, list):
+        for item in payload:
+            found = _extract_string_credential(item)
+            if found:
+                return found
+    elif _tokenish(payload):
+        return str(payload).strip()
+    return None
+
+
+def import_codex_auth_from_disk(save_to_config: bool = True) -> str | None:
+    """Import a Codex CLI auth artifact into OpenDraft runtime env/auth store."""
+    codex_home = get_codex_home()
+    auth_file = codex_home / 'auth.json'
+    if not auth_file.exists():
+        return None
+
+    try:
+        payload = json.loads(auth_file.read_text(encoding='utf-8'))
+    except Exception:
+        return None
+
+    credential = _extract_string_credential(payload)
+    if not credential:
+        return None
+
+    os.environ['OPENAI_API_KEY'] = credential
+    os.environ['OPENAI_AUTH_MODE'] = 'openai-codex'
+
+    if save_to_config:
+        config = clear_saved_openai_api_key(get_saved_config())
+        config['provider'] = 'openai'
+        config['auth_mode'] = 'openai-codex'
+        config['codex_home'] = str(codex_home)
+        config['codex_auth_file'] = str(auth_file)
+        save_config(config)
+        save_auth({
+            'provider': 'openai',
+            'auth_mode': 'openai-codex',
+            'codex_home': str(codex_home),
+            'codex_auth_file': str(auth_file),
+            'credential': credential,
+            'imported_from': str(auth_file),
+        })
+
+    return credential
+
+
+def run_codex_login_flow() -> tuple[bool, str]:
+    """Run the real Codex CLI browser login flow and import the resulting auth."""
+    import subprocess
+
+    codex_bin = get_codex_binary()
+    if not codex_bin:
+        return False, 'Codex CLI not found on PATH. Install it first, then retry.'
+
+    codex_home = get_codex_home()
+    config_path = ensure_codex_file_auth_storage(codex_home)
+    env = os.environ.copy()
+    env['CODEX_HOME'] = str(codex_home)
+    env['OPENAI_AUTH_MODE'] = 'openai-codex'
+
+    try:
+        result = subprocess.run([codex_bin, 'login'], env=env)
+    except FileNotFoundError:
+        return False, f'Could not execute Codex CLI at {codex_bin}'
+    except KeyboardInterrupt:
+        return False, 'Codex login cancelled.'
+
+    if result.returncode != 0:
+        return False, f'Codex login failed with exit code {result.returncode}'
+
+    credential = import_codex_auth_from_disk(save_to_config=True)
+    if credential:
+        return True, f'Codex session imported from {config_path.parent / "auth.json"}'
+
+    return False, f'Codex login finished, but no usable auth.json was found in {codex_home}'
+
+
+def get_provider_key(provider: str | None = None) -> str:
+    """Get API key for a provider from environment or saved config."""
+    provider = (provider or get_active_provider()).strip().lower()
+    if provider in {'codex', 'openai-codex'}:
+        provider = 'openai'
+    saved = get_saved_config()
+    if provider == 'gemini':
+        return os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY') or saved.get('google_api_key', '') or saved.get('gemini_api_key', '')
+    if provider == 'openai':
+        return os.getenv('OPENAI_API_KEY') or saved.get('openai_api_key', '')
+    return ''
+
+
+def has_api_key(provider: str | None = None):
+    """Check if the selected provider has credentials configured."""
+    return bool(get_provider_key(provider))
+
+
+def get_api_key(provider: str | None = None):
+    """Get the selected provider API key from environment or config."""
+    return get_provider_key(provider)
 
 
 def clear_screen():
@@ -335,8 +566,13 @@ def print_logo():
 def print_header():
     """Print clean header with logo."""
     c = Colors
+    provider = get_active_provider()
     print_logo()
     print(f"  {c.GRAY}AI Research Paper Generator{c.RESET}  {c.DIM}v{__version__}{c.RESET}")
+    print(f"  {c.GRAY}Provider:{c.RESET} {get_provider_display_label(provider)}")
+    auth_mode = get_active_auth_mode() if provider == 'openai' else 'api_key'
+    if provider == 'openai':
+        print(f"  {c.GRAY}Auth mode:{c.RESET} {auth_mode.replace('-', ' ').title()}")
     print()
 
 
@@ -346,7 +582,7 @@ def print_divider():
 
 
 def run_setup():
-    """Interactive setup wizard."""
+    """Interactive setup wizard with provider choice."""
     c = Colors
     clear_screen()
     print_header()
@@ -354,43 +590,140 @@ def run_setup():
     print(f"  {c.BOLD}Setup{c.RESET}")
     print_divider()
     print()
-    print(f"  You need a {c.BOLD}Google AI API key{c.RESET} (free).")
-    print()
 
-    # Auto-open browser
-    api_url = "https://aistudio.google.com/apikey"
-    try:
-        import webbrowser
-        webbrowser.open(api_url)
-        print(f"  {c.GREEN}✓{c.RESET} Opened {c.UNDERLINE}{api_url}{c.RESET} in browser")
-    except:
-        print(f"  {c.CYAN}1.{c.RESET} Open {c.UNDERLINE}{api_url}{c.RESET}")
-
-    print()
-    print(f"  {c.CYAN}→{c.RESET} Click {c.BOLD}Create API Key{c.RESET}, then copy and paste below")
-    print()
-
-    try:
-        api_key = input(f"  {c.PURPLE}›{c.RESET} API Key: ").strip()
-    except (KeyboardInterrupt, EOFError):
-        print(f"\n\n  {c.GRAY}Cancelled.{c.RESET}\n")
+    current_provider = get_active_provider()
+    provider_default = 1 if current_provider == 'openai' else 0
+    provider = select_option(
+        "Choose AI provider",
+        [
+            ("Google Gemini", "gemini"),
+            ("OpenAI Codex / OpenAI", "openai"),
+        ],
+        default=provider_default,
+    )
+    if provider is None:
         return False
 
-    if not api_key:
-        print(f"\n  {c.RED}✗{c.RESET} No key provided.\n")
-        return False
+    auth_mode = 'api_key'
+    if provider == 'openai':
+        print()
+        auth_mode = select_option(
+            "Choose OpenAI auth method",
+            [
+                ("OpenAI API key", "api_key"),
+                ("OpenAI Codex login (browser / session)", "openai-codex"),
+            ],
+            default=0,
+        )
+        if auth_mode is None:
+            return False
 
-    if len(api_key) < 20:
-        print(f"\n  {c.RED}✗{c.RESET} Invalid key format.\n")
-        return False
+        if auth_mode == 'api_key':
+            print(f"  {c.BOLD}OpenAI Codex / OpenAI setup{c.RESET}")
+            print(f"  You need an {c.BOLD}OpenAI API key{c.RESET}.")
+            api_url = "https://platform.openai.com/api-keys"
+            key_label = "OpenAI API Key"
+            env_name = 'OPENAI_API_KEY'
+            saved_key_name = 'openai_api_key'
+            print()
+            try:
+                import webbrowser
+                webbrowser.open(api_url)
+                print(f"  {c.GREEN}✓{c.RESET} Opened {c.UNDERLINE}{api_url}{c.RESET} in browser")
+            except Exception:
+                print(f"  {c.CYAN}1.{c.RESET} Open {c.UNDERLINE}{api_url}{c.RESET}")
+
+            print()
+            print(f"  {c.CYAN}→{c.RESET} Paste the key below")
+            print()
+
+            try:
+                api_key = input(f"  {c.PURPLE}›{c.RESET} {key_label}: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print(f"\n\n  {c.GRAY}Cancelled.{c.RESET}\n")
+                return False
+
+            if not api_key:
+                print(f"\n  {c.RED}✗{c.RESET} No key provided.\n")
+                return False
+
+            if len(api_key) < 20:
+                print(f"\n  {c.RED}✗{c.RESET} Invalid key format.\n")
+                return False
+        else:
+            print(f"  {c.BOLD}OpenAI Codex login{c.RESET}")
+            print(f"  Browser-based Codex auth will start now.")
+            print(f"  The CLI should open your browser and ask you to sign in/approve.")
+            print(f"  After success, OpenDraft will import the local Codex session.")
+            print()
+            success, message = run_codex_login_flow()
+            if not success:
+                print(f"  {c.RED}✗{c.RESET} {message}")
+                print()
+                return False
+            print(f"  {c.GREEN}✓{c.RESET} {message}")
+            print()
+            api_key = os.getenv('OPENAI_API_KEY') or get_saved_config().get('openai_api_key', '').strip()
+            env_name = 'OPENAI_API_KEY'
+            saved_key_name = 'openai_api_key'
+    else:
+        print(f"  {c.BOLD}Gemini setup{c.RESET}")
+        print(f"  You need a {c.BOLD}Google AI API key{c.RESET} (free).")
+        api_url = "https://aistudio.google.com/apikey"
+        key_label = "Google AI API Key"
+        env_name = 'GOOGLE_API_KEY'
+        saved_key_name = 'google_api_key'
+        print()
+        try:
+            import webbrowser
+            webbrowser.open(api_url)
+            print(f"  {c.GREEN}✓{c.RESET} Opened {c.UNDERLINE}{api_url}{c.RESET} in browser")
+        except Exception:
+            print(f"  {c.CYAN}1.{c.RESET} Open {c.UNDERLINE}{api_url}{c.RESET}")
+
+        print()
+        print(f"  {c.CYAN}→{c.RESET} Paste the key below")
+        print()
+
+        try:
+            api_key = input(f"  {c.PURPLE}›{c.RESET} {key_label}: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print(f"\n\n  {c.GRAY}Cancelled.{c.RESET}\n")
+            return False
+
+        if not api_key:
+            print(f"\n  {c.RED}✗{c.RESET} No key provided.\n")
+            return False
+
+        if len(api_key) < 20:
+            print(f"\n  {c.RED}✗{c.RESET} Invalid key format.\n")
+            return False
 
     config = get_saved_config()
-    config['google_api_key'] = api_key
+    config['provider'] = provider
+    config['auth_mode'] = auth_mode
+    if api_key:
+        config[saved_key_name] = api_key
+    if provider == 'gemini' and api_key:
+        # Keep backwards compatibility with older config files.
+        config['google_api_key'] = api_key
     save_config(config)
-    os.environ['GOOGLE_API_KEY'] = api_key
+
+    os.environ['AI_PROVIDER'] = provider
+    os.environ['OPENAI_AUTH_MODE'] = auth_mode
+    if api_key:
+        os.environ[env_name] = api_key
+    if provider == 'gemini' and api_key:
+        os.environ['GOOGLE_API_KEY'] = api_key
+        os.environ['GEMINI_API_KEY'] = api_key
 
     print()
-    print(f"  {c.GREEN}✓{c.RESET} API key saved to {c.GRAY}~/.opendraft/config.json{c.RESET}")
+    print(f"  {c.GREEN}✓{c.RESET} Saved provider: {get_provider_label(provider)}")
+    print(f"  {c.GREEN}✓{c.RESET} Auth mode: {auth_mode.replace('-', ' ').title()}")
+    if api_key:
+        print(f"  {c.GREEN}✓{c.RESET} API key saved to {c.GRAY}~/.opendraft/config.json{c.RESET}")
+    else:
+        print(f"  {c.YELLOW}!{c.RESET} No API key saved; runtime will use your shell env if available.")
     print()
     return True
 
@@ -439,6 +772,8 @@ def run_interactive():
 
     # Start preloading heavy modules in background while user fills options
     start_preloading()
+
+    apply_saved_runtime_config()
 
     # Check for API key
     if not has_api_key():
@@ -1048,6 +1383,8 @@ def main():
     """Main CLI entry point."""
     import argparse
 
+    apply_saved_runtime_config()
+
     # Handle subcommands before argparse (they have their own parsers)
     if len(sys.argv) > 1:
         cmd = sys.argv[1].lower()
@@ -1176,6 +1513,8 @@ def main():
     args = parser.parse_args()
     c = Colors
 
+    apply_saved_runtime_config()
+
     # Handle 'setup' command
     if args.topic and args.topic.lower() == 'setup':
         if run_setup():
@@ -1199,6 +1538,8 @@ def main():
     # Quick mode
     clear_screen()
     print_header()
+
+    apply_saved_runtime_config()
 
     if not has_api_key():
         print(f"  {c.YELLOW}!{c.RESET} Run {c.BOLD}opendraft setup{c.RESET} first.\n")

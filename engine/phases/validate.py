@@ -246,7 +246,10 @@ def _run_factcheck(ctx: DraftContext, qa_content: str) -> None:
         if claims:
             from utils.factcheck_verifier import FactCheckVerifier
 
-            verifier = FactCheckVerifier(api_key=ctx.config.google_api_key, model=ctx.model)
+            verifier = FactCheckVerifier(
+                api_key=(ctx.config.google_api_key if ctx.config.model.provider == 'gemini' else ctx.config.openai_api_key),
+                model=ctx.model,
+            )
             results = verifier.verify_claims(claims)
 
             factcheck_report = verifier.format_report(results)

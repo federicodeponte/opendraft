@@ -25,7 +25,7 @@ class ConcurrencyConfig:
     Tier-adaptive concurrency configuration.
 
     Automatically adjusts parallelization and rate limiting based on
-    detected Gemini API tier (free=10 RPM, paid=2,000 RPM).
+    detected API tier (free=10 RPM, paid=2,000 RPM).
 
     Attributes:
         tier: API tier ("free", "paid", "custom")
@@ -72,7 +72,7 @@ class ConcurrencyConfig:
             if env_tier and env_tier.lower() in ["free", "paid", "custom"]:
                 self.tier = env_tier.lower()
             else:
-                # Only auto-detect if we have an API key
+                # Only auto-detect if we have a Google/Gemini API key
                 api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
                 if api_key:
                     try:

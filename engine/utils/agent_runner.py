@@ -42,13 +42,12 @@ def safe_print(*args, **kwargs):
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from google import genai
 from config import get_config
 from concurrency.concurrency_config import get_concurrency_config
 from utils.output_validators import ValidationResult
 from utils.api_citations.orchestrator import CitationResearcher
 from utils.citation_database import Citation
-from utils.gemini_client import GeminiModelWrapper
+from utils.llm_client import build_model_client
 from utils.deep_research import DeepResearchPlanner
 from utils.token_tracker import CallStatus
 
@@ -58,32 +57,18 @@ logger = logging.getLogger(__name__)
 
 def setup_model(model_override: Optional[str] = None) -> Any:
     """
-    Initialize and return configured Gemini model wrapper.
+    Initialize and return configured model wrapper for the active provider.
 
     Args:
         model_override: Optional model name to override config default
 
     Returns:
-        GeminiModelWrapper: Configured model wrapper with generate_content() method
+        Provider-agnostic model wrapper with generate_content() method
 
     Raises:
-        ValueError: If API key is missing or model name is invalid
+        ValueError: If the active provider's credentials are missing or invalid
     """
-    config = get_config()
-
-    if not config.google_api_key:
-        raise ValueError(
-            "GOOGLE_API_KEY not found. Set it in .env file or environment variables."
-        )
-
-    client = genai.Client(api_key=config.google_api_key)
-    model_name = model_override or config.model.model_name
-
-    return GeminiModelWrapper(
-        client=client,
-        model_name=model_name,
-        temperature=config.model.temperature,
-    )
+    return build_model_client(model_override=model_override)
 
 
 def load_prompt(prompt_path: str) -> str:
@@ -527,13 +512,17 @@ def _is_transient_error(error: Exception) -> bool:
 
     is_transient = any(pattern in error_str for pattern in transient_patterns)
     
-    # Signal backpressure for rate limit errors
-    if is_transient and ('429' in error_str or 'rate limit' in error_str or 'quota' in error_str):
+    # Signal backpressure for rate limit errors on Gemini-backed search paths only.
+    active_provider = (os.getenv('AI_PROVIDER') or 'gemini').strip().lower()
+    if active_provider in {'codex', 'openai-codex'}:
+        active_provider = 'openai'
+
+    if is_transient and active_provider == 'gemini' and ('429' in error_str or 'rate limit' in error_str or 'quota' in error_str):
         try:
             from utils.backpressure import BackpressureManager, APIType
             bp = BackpressureManager()
             bp.signal_429(APIType.GEMINI_PRIMARY)
-            logger.debug("Signaled backpressure for rate limit error")
+            logger.debug("Signaled backpressure for Gemini rate limit error")
         except Exception:
             pass  # Don't fail on backpressure errors
     

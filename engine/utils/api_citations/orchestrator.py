@@ -176,10 +176,13 @@ class CitationResearcher:
         self.enable_smart_routing = enable_smart_routing
         # Auto-detect Serper from env if not explicitly set
         if use_serper is None:
-            self.use_serper = os.getenv('USE_SERPER', 'false').lower() == 'true'
+            self.use_serper = os.getenv('USE_SERPER', 'false').lower() == 'true' or bool(os.getenv('SERPER_API_KEY'))
         else:
             self.use_serper = use_serper
         self.verbose = verbose
+
+        google_key_present = bool(os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY'))
+        self.enable_gemini_grounded = enable_gemini_grounded and (self.use_serper or google_key_present)
 
         # Initialize API clients
         if self.enable_crossref:
@@ -217,7 +220,7 @@ class CitationResearcher:
             "Crossref": 0,
             "OpenAlex": 0,
             "Semantic Scholar": 0,
-            "Gemini Grounded": 0,
+            "Web Search": 0,
             "Serper": 0,
         }
 
@@ -363,7 +366,7 @@ class CitationResearcher:
                 safe_print(f"    📊 Query type: {classification.query_type} (confidence: {classification.confidence:.2f})")
         else:
             # Use original fallback chain if smart routing disabled
-            api_chain = ['crossref', 'openalex', 'semantic_scholar', 'gemini_grounded']
+            api_chain = ['crossref', 'openalex', 'semantic_scholar', 'web_search']
 
         # Filter out disabled APIs from chain (Day 1 Fix)
         enabled_chain = []
@@ -374,7 +377,7 @@ class CitationResearcher:
                 continue
             if api_name == 'semantic_scholar' and not self.enable_semantic_scholar:
                 continue
-            if api_name == 'gemini_grounded' and not self.enable_gemini_grounded:
+            if api_name == 'web_search' and not self.enable_gemini_grounded:
                 continue
             enabled_chain.append(api_name)
 
@@ -404,7 +407,7 @@ class CitationResearcher:
             if self.enable_semantic_scholar:
                 parallel_apis.append('semantic_scholar')
             if self.enable_gemini_grounded:
-                parallel_apis.append('gemini_grounded')
+                parallel_apis.append('web_search')
 
 
             # Report progress for parallel search
@@ -517,15 +520,15 @@ class CitationResearcher:
                             safe_print(f"✗ Error: {e}")
                         logger.error(f"Semantic Scholar error: {e}")
 
-                elif api_name == 'gemini_grounded' and self.enable_gemini_grounded:
-                    self._report_progress("AI-powered academic search...", "search")
+                elif api_name == 'web_search' and self.enable_gemini_grounded:
+                    self._report_progress("Web search for industry sources...", "search")
                     if self.verbose:
-                        search_name = "Serper" if self.use_serper else "Gemini Grounded (Google Search)"
+                        search_name = "Serper" if self.use_serper else "Web Search"
                         safe_print(f"    → Trying {search_name}...", end=" ", flush=True)
                     try:
                         metadata = self.gemini_grounded.search_paper(topic)
                         if metadata and (metadata.get('doi') or metadata.get('url')):
-                            source_name = "Serper" if self.use_serper else "Gemini Grounded"
+                            source_name = "Web Search"
                             valid_results.append((metadata, source_name))
                             self.source_usage_count[source_name] = self.source_usage_count.get(source_name, 0) + 1
                             if self.verbose:
@@ -541,11 +544,11 @@ class CitationResearcher:
         # Try Gemini LLM as absolute last resort (not part of smart routing)
         if not valid_results and self.enable_llm_fallback:
             if self.verbose:
-                safe_print(f"    → Trying Gemini LLM fallback...", end=" ", flush=True)
+                safe_print(f"    → Trying LLM fallback...", end=" ", flush=True)
             try:
                 metadata = self._llm_research(topic)
                 if metadata and (metadata.get('doi') or metadata.get('url')):
-                    valid_results.append((metadata, "Gemini LLM"))
+                    valid_results.append((metadata, "LLM fallback"))
                     if self.verbose:
                         safe_print(f"✓")
                 else:
@@ -791,7 +794,7 @@ class CitationResearcher:
         Search a single API for citations.
 
         Args:
-            api_name: Name of the API ('crossref', 'openalex', 'semantic_scholar', 'gemini_grounded')
+            api_name: Name of the API ('crossref', 'openalex', 'semantic_scholar', 'web_search')
             topic: Topic to search for
 
         Returns:
@@ -830,20 +833,20 @@ class CitationResearcher:
                     return (metadata, "Semantic Scholar")
                 else:
                     logger.debug(f"  ✗ Semantic Scholar returned no results")
-            elif api_name == 'gemini_grounded' and self.enable_gemini_grounded:
-                logger.debug(f"  → Applying rate limiting before Gemini Grounded call...")
+            elif api_name == 'web_search' and self.enable_gemini_grounded:
+                logger.debug(f"  → Applying rate limiting before Web Search call...")
                 rate_limiter = get_gemini_rate_limiter()
                 rate_limiter.wait_if_needed()
-                logger.debug(f"  → Calling Gemini Grounded API...")
+                logger.debug(f"  → Calling Web Search API...")
                 metadata = self.gemini_grounded.search_paper(topic)
                 if metadata:
                     logger.info(
-                        f"  ✓ Gemini Grounded found: {metadata.get('title', 'Unknown')[:80]}... (URL: {metadata.get('url', 'N/A')[:50]})"
+                        f"  ✓ Web Search found: {metadata.get('title', 'Unknown')[:80]}... (URL: {metadata.get('url', 'N/A')[:50]})"
                     )
-                    source_name = "Serper" if self.use_serper else "Gemini Grounded"
+                    source_name = "Web Search"
                     return (metadata, source_name)
                 else:
-                    logger.debug(f"  ✗ Gemini Grounded returned no results")
+                    logger.debug(f"  ✗ Web Search returned no results")
 
             return (None, api_name)
 

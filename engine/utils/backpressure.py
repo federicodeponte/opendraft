@@ -31,9 +31,10 @@ class APIType(Enum):
     GEMINI_FALLBACK_3 = "gemini_fallback_3"
     SEMANTIC_SCHOLAR = "semantic_scholar"
     CROSSREF = "crossref"
+    WEB_SEARCH = "web_search"
 
 
-# All Gemini API types for multi-key rotation
+# API types for rate limit tracking
 GEMINI_API_TYPES = [
     APIType.GEMINI_PRIMARY,
     APIType.GEMINI_FALLBACK,

@@ -41,12 +41,15 @@ class ModelConfig:
     Supports Gemini models with configurable parameters.
     """
     provider: Literal['gemini', 'claude', 'openai'] = field(
-        default_factory=lambda: os.getenv('AI_PROVIDER', 'gemini')
+        default_factory=lambda: (
+            'openai' if (os.getenv('AI_PROVIDER', 'gemini').strip().lower() in {'codex', 'openai-codex'})
+            else os.getenv('AI_PROVIDER', 'gemini').strip().lower()
+        )
     )
     model_name: str = field(
         default_factory=lambda: (
             os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
-            if os.getenv('AI_PROVIDER') == 'openai'
+            if (os.getenv('AI_PROVIDER', 'gemini').strip().lower() in {'openai', 'codex', 'openai-codex'})
             else os.getenv('GEMINI_MODEL', 'gemini-3-pro-preview')
         )
     )
@@ -56,6 +59,10 @@ class ModelConfig:
 
     def __post_init__(self):
         """Validate model configuration."""
+        self.provider = (self.provider or 'gemini').strip().lower()
+        if self.provider in {'codex', 'openai-codex'}:
+            self.provider = 'openai'
+
         valid_gemini_models = [
             'gemini-3-pro-preview',    # Pro model for complex tasks
             'gemini-3-flash-preview',  # Primary flash model (supports JSON output)

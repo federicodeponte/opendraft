@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-ABOUTME: Gemini API client with Google Search grounding for source discovery
-ABOUTME: Uses Google Search tool via REST API to find and validate real web sources with citations
+ABOUTME: Web search client with Google Search grounding for source discovery
+ABOUTME: Uses grounded web search via REST API to find and validate real web sources with citations
 """
 
 import os
@@ -168,10 +168,10 @@ def extract_year_from_url(url: str) -> int:
 
 class GeminiGroundedClient(BaseAPIClient):
     """
-    Gemini API client with Google Search grounding.
+    Web search client with Google Search grounding.
 
-    Uses Gemini 2.5 Pro with Google Search tool via REST API to discover real sources
-    with grounded citations. Validates URLs and extracts metadata.
+    Uses grounded search with Google Search tooling via REST API to discover real sources
+    with citations. Validates URLs and extracts metadata.
 
     Features:
     - Google Search grounding for real-time source discovery (via REST API)
@@ -195,7 +195,7 @@ class GeminiGroundedClient(BaseAPIClient):
         validate_urls: bool = True
     ):
         """
-        Initialize Gemini Grounded client.
+        Initialize grounded web search client.
 
         Args:
             api_key: Google AI API key (defaults to GOOGLE_API_KEY env var)
@@ -225,7 +225,7 @@ class GeminiGroundedClient(BaseAPIClient):
                 "GOOGLE_API_KEY not found. Set via environment variable or constructor."
             )
 
-        # Use Gemini 2.5 Flash for fast grounding with two-step approach
+        # Use the grounded search model for fast source discovery with a two-step approach
         self.model_name = 'gemini-2.5-flash'
 
         # Multi-key rotation for 429 rate limit handling
@@ -253,8 +253,8 @@ class GeminiGroundedClient(BaseAPIClient):
 
     def _try_dataforseo_fallback(self, query: str) -> Optional[Dict[str, Any]]:
         """
-        Fallback to DataForSEO SERP API when googleSearch hits quota limits.
-        Uses DataForSEO to get search results, then feeds them to Gemini for processing.
+        Fallback to DataForSEO SERP API when web search hits quota limits.
+        Uses DataForSEO to get search results, then feeds them to the grounded processor for validation.
 
         Args:
             query: Search query
@@ -273,8 +273,8 @@ class GeminiGroundedClient(BaseAPIClient):
 
     def search_paper(self, query: str) -> Optional[Dict[str, Any]]:
         """
-        Search for a source using Gemini with Google Search grounding via REST API.
-        Falls back to DataForSEO SERP API when googleSearch hits quota limits (429).
+        Search for a source using grounded web search via REST API.
+        Falls back to DataForSEO SERP API when web search hits quota limits (429).
 
         Args:
             query: Search query (topic, title, keywords)
@@ -292,10 +292,10 @@ class GeminiGroundedClient(BaseAPIClient):
             # Construct grounded search prompt
             prompt = self._build_search_prompt(query)
 
-            # Generate with Google Search grounding via REST API
+            # Generate with grounded web search via REST API
             response_data = self._generate_content_with_grounding(prompt)
 
-            # If googleSearch hit quota limit (429), try DataForSEO fallback
+            # If web search hit quota limit (429), try DataForSEO fallback
             if not response_data:
                 return self._try_dataforseo_fallback(query)
 
@@ -320,7 +320,7 @@ class GeminiGroundedClient(BaseAPIClient):
                 from utils.web_search_fallback import WebSearchFallback
                 fallback = WebSearchFallback()
                 if fallback.dataforseo.enabled:
-                    logger.info(f"Gemini error - trying DataForSEO fallback for: {query[:50]}...")
+                    logger.info(f"Web search fallback - trying DataForSEO for: {query[:50]}...")
                     results = fallback.dataforseo.search(query, limit=5)
                     if results and len(results) > 0:
                         result = results[0]
@@ -333,14 +333,14 @@ class GeminiGroundedClient(BaseAPIClient):
             except Exception as fallback_error:
                 logger.warning(f"DataForSEO fallback failed: {fallback_error}")
             
-            safe_print(f"Gemini grounded search error: {e}")
+            safe_print(f"Web search grounded error: {e}")
             import traceback
             traceback.print_exc()
             return None
 
     def _generate_content_with_grounding(self, prompt: str) -> Optional[Dict[str, Any]]:
         """
-        Generate content using Gemini REST API with Google Search grounding.
+        Generate content using grounded web search via REST API.
 
         Args:
             prompt: User prompt for generation
@@ -362,7 +362,7 @@ class GeminiGroundedClient(BaseAPIClient):
                     "maxOutputTokens": 8192,  # High limit for deep research
                 },
                 "tools": [
-                    {"googleSearch": {}},  # Enable Google Search grounding
+                    {"googleSearch": {}},  # Enable grounded web search
                     {"urlContext": {}},    # Enable URL context for scraping
                 ]
             }
@@ -385,7 +385,7 @@ class GeminiGroundedClient(BaseAPIClient):
                     try:
                         from utils.backpressure import BackpressureManager, APIType
                         bp = BackpressureManager()
-                        bp.signal_429(APIType.GEMINI_PRIMARY)
+                        bp.signal_429(APIType.WEB_SEARCH)
 
                         # Only attempt key rotation if at least one fallback key is configured
                         available_fallbacks = [k for k in self._fallback_keys.values() if k]
@@ -400,7 +400,7 @@ class GeminiGroundedClient(BaseAPIClient):
 
                             # Only retry if we got a different, non-empty key
                             if best_key and best_key != self.api_key:
-                                safe_print(f"Gemini API rate limit (429) - switching to {best_type.value}")
+                                safe_print(f"Web search rate limit (429) - switching to {best_type.value}")
                                 retry_url = f"{self.base_url}/{self.model_name}:generateContent?key={best_key}"
                                 response = self.session.post(
                                     retry_url,
@@ -419,7 +419,7 @@ class GeminiGroundedClient(BaseAPIClient):
                     except Exception as bp_err:
                         logger.debug(f"Backpressure key rotation error: {bp_err}")
 
-                safe_print(f"Gemini API error {response.status_code}: {error_text}")
+                safe_print(f"Web search API error {response.status_code}: {error_text}")
                 return None
 
             data = response.json()
@@ -432,13 +432,13 @@ class GeminiGroundedClient(BaseAPIClient):
             return data
 
         except Exception as e:
-            safe_print(f"Error calling Gemini API: {e}")
+            safe_print(f"Error calling grounded web search API: {e}")
             import traceback
             traceback.print_exc()
             return None
 
     def _build_search_prompt(self, query: str) -> str:
-        """Build search prompt for Gemini."""
+        """Build search prompt for grounded web search."""
         return f"""Find a credible web source about: {query}
 
 Requirements:
@@ -454,10 +454,10 @@ Provide the source title, URL, and a brief snippet explaining relevance."""
         response_data: Dict[str, Any]
     ) -> List[Dict[str, str]]:
         """
-        Extract grounding citations from Gemini REST API response.
+        Extract grounding citations from web search REST API response.
 
         Args:
-            response_data: Gemini API response dict (from REST API)
+            response_data: API response dict (from REST API)
 
         Returns:
             List of dicts with 'title', 'url', 'snippet' keys
@@ -990,3 +990,7 @@ Provide the source title, URL, and a brief snippet explaining relevance."""
         """Close HTTP session."""
         if hasattr(self, 'session'):
             self.session.close()
+
+
+# Backward-compatible alias while runtime shifts away from Gemini-specific naming.
+WebSearchGroundedClient = GeminiGroundedClient

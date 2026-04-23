@@ -22,7 +22,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config import get_config
 from utils.document_reader import read_document, get_document_info
-from utils.gemini_client import GeminiModelWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,7 @@ DIGEST_PROMPT = (Path(__file__).parent / "prompts" / "digest.md").read_text()
 
 def generate_script(
     document_path: Path,
-    model_name: str = "gemini-3-flash-preview",
+    model_name: str = "gpt-4.1-nano",
     max_chars: int = 100000,
 ) -> tuple[str, dict]:
     """
@@ -39,28 +38,19 @@ def generate_script(
 
     Args:
         document_path: Path to PDF, markdown, or text file
-        model_name: Gemini model to use
+        model_name: Model name to use for the active provider
         max_chars: Max characters to read from document
 
     Returns:
         Tuple of (script, metadata)
     """
-    try:
-        from google import genai
-    except ImportError:
-        raise ImportError("google-genai required. Install with: pip install google-genai")
-
     document_path = Path(document_path)
     content = read_document(document_path, max_chars=max_chars)
 
-    # Setup Gemini client
-    config = get_config()
-    api_key = config.google_api_key or os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY required")
+    # Setup provider client
+    from utils.llm_client import build_model_client
 
-    client = genai.Client(api_key=api_key)
-    model = GeminiModelWrapper(client, model_name, temperature=0.7)
+    model = build_model_client(model_override=model_name)
 
     # Build prompt
     prompt = f"""{DIGEST_PROMPT}
@@ -114,7 +104,7 @@ def generate_digest(
     document_path: Path,
     output_dir: Optional[Path] = None,
     voice: str = "rachel",
-    model_name: str = "gemini-3-flash-preview",
+    model_name: str = "gpt-4.1-nano",
     generate_audio: bool = True,
 ) -> dict:
     """
@@ -124,7 +114,7 @@ def generate_digest(
         document_path: Path to document
         output_dir: Directory for output files
         voice: ElevenLabs voice name
-        model_name: Gemini model for script generation
+        model_name: Model name for script generation
         generate_audio: Whether to generate audio
 
     Returns:
@@ -187,8 +177,8 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default="gemini-3-flash-preview",
-        help="Gemini model (default: gemini-3-flash-preview)"
+        default="gpt-4.1-nano",
+        help="Model name (default: gpt-4.1-nano)"
     )
 
     args = parser.parse_args()

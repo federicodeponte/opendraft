@@ -38,17 +38,20 @@ class CitationCompiler:
         self._nalt_footnote_counter = 0
         self._nalt_footnote_definitions: List[str] = []
 
-        # Initialize API-backed citation researcher (Crossref → Semantic Scholar → Gemini Grounded → Gemini LLM)
+        # Initialize API-backed citation researcher (Crossref → Semantic Scholar → web search → LLM fallback)
         # Semantic Scholar can be disabled via env var if rate limited (403 errors)
         import os
         enable_semantic_scholar = os.environ.get('ENABLE_SEMANTIC_SCHOLAR', 'true').lower() != 'false'
+        use_serper = os.environ.get('USE_SERPER', 'false').lower() == 'true' or bool(os.environ.get('SERPER_API_KEY'))
+        enable_web_search = use_serper or bool(os.environ.get('GOOGLE_API_KEY') or os.environ.get('GEMINI_API_KEY'))
 
         self.researcher = CitationResearcher(
             gemini_model=model,
             enable_crossref=True,
             enable_semantic_scholar=enable_semantic_scholar,
-            enable_gemini_grounded=True,  # Enable Gemini Grounded for web sources
+            enable_gemini_grounded=enable_web_search,
             enable_llm_fallback=True,
+            use_serper=use_serper,
             verbose=False  # Will be overridden by method verbose parameter
         )
 

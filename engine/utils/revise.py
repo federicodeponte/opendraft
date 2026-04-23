@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ABOUTME: Revision module for OpenDraft V1
-ABOUTME: Allows revising existing drafts with specific instructions using Gemini
+ABOUTME: Allows revising existing drafts with specific instructions using the active provider
 
 Ported from V3 with simplifications for V1's lighter architecture.
 """
@@ -12,11 +12,10 @@ import time
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from google import genai
-
 from config import get_config
 from utils.export_professional import export_pdf, export_docx
 from utils.retry import get_gemini_circuit_breaker
+from utils.llm_client import build_model_client
 
 logger = logging.getLogger(__name__)
 
@@ -86,21 +85,21 @@ def find_draft_in_folder(folder: Path) -> Optional[Path]:
     return None
 
 
-def call_gemini_revise(draft: str, instructions: str, model: str = "gemini-3-flash-preview", max_retries: int = 3) -> str:
+def call_llm_revise(draft: str, instructions: str, model: str | None = None, max_retries: int = 3) -> str:
     """
-    Call Gemini to revise a draft based on instructions.
+    Call the active provider to revise a draft based on instructions.
 
     Args:
         draft: The current draft text
         instructions: Revision instructions from user
-        model: Gemini model to use
+        model: Optional model override
         max_retries: Maximum retry attempts on transient errors
 
     Returns:
         Revised draft text
     """
     config = get_config()
-    client = genai.Client(api_key=config.google_api_key)
+    client = build_model_client(model_override=model)
     circuit_breaker = get_gemini_circuit_breaker()
 
     prompt = f"""You are an academic writing expert. Revise the following draft based on the user's instructions.
@@ -122,7 +121,7 @@ def call_gemini_revise(draft: str, instructions: str, model: str = "gemini-3-fla
 Return the complete revised draft below:
 """
 
-    logger.info(f"Calling {model} for revision...")
+    logger.info(f"Calling {model or 'active provider model'} for revision...")
 
     # Retry loop with circuit breaker
     last_error = None
@@ -133,9 +132,8 @@ Return the complete revised draft below:
             continue
 
         try:
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
+            response = client.generate_content(
+                prompt,
             )
             circuit_breaker.record_success()
             revised = response.text.strip()
@@ -169,6 +167,10 @@ Return the complete revised draft below:
         revised = revised[:-3].strip()
 
     return revised
+
+
+# Backward-compatible alias while runtime shifts away from Gemini-only naming.
+call_gemini_revise = call_llm_revise
 
 
 def _get_next_version(folder: Path, base_name: str) -> str:

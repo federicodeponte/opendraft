@@ -58,11 +58,22 @@ def check_api_keys():
     """Check if API keys are configured."""
     print("\n🔑 API Keys (from environment):")
 
+    active_provider = (os.getenv("AI_PROVIDER") or "gemini").strip().lower()
+    if active_provider in {"codex", "openai-codex"}:
+        active_provider = "openai"
+    auth_mode = (os.getenv("OPENAI_AUTH_MODE") or "api_key").strip().lower()
+    if auth_mode in {"api", "apikey", "api-key"}:
+        auth_mode = "api_key"
+    elif auth_mode in {"codex", "openai-codex", "browser"}:
+        auth_mode = "openai-codex"
+    print(f"   ℹ️  Active provider: {active_provider}")
+    print(f"   ℹ️  Auth mode: {auth_mode}")
+
     keys = {
-        "GOOGLE_API_KEY": "Google Gemini (primary)",
-        "GEMINI_API_KEY": "Google Gemini (alias)",
+        "GOOGLE_API_KEY": "Google Gemini", 
+        "GEMINI_API_KEY": "Google Gemini alias",
+        "OPENAI_API_KEY": "OpenAI / Codex",
         "ANTHROPIC_API_KEY": "Anthropic Claude",
-        "OPENAI_API_KEY": "OpenAI GPT",
     }
 
     env_file = Path(".env")
@@ -72,6 +83,15 @@ def check_api_keys():
         load_dotenv()
     else:
         print(f"   ⚠️  No .env file found (using system environment)")
+
+    if active_provider == "openai" and auth_mode == "openai-codex" and not os.getenv("OPENAI_API_KEY"):
+        try:
+            from opendraft.cli import import_codex_auth_from_disk
+            imported = import_codex_auth_from_disk(save_to_config=False)
+            if imported:
+                print("   ✅ Imported OpenAI Codex session from local auth file")
+        except Exception:
+            pass
 
     found_any = False
     for key, name in keys.items():
@@ -84,12 +104,20 @@ def check_api_keys():
         else:
             print(f"   ⚠️  {name}: Not set")
 
-    if not found_any:
-        print("\n   ⚠️  WARNING: No API keys configured!")
+    if active_provider == "openai" and auth_mode == "openai-codex":
+        required_ok = bool(os.getenv("OPENAI_API_KEY"))
+        codex_auth = Path(os.getenv("CODEX_HOME") or Path.home() / ".codex") / "auth.json"
+        if not codex_auth.exists():
+            print(f"\n   ⚠️  Codex auth file not found: {codex_auth}")
+    else:
+        required_ok = bool(os.getenv("OPENAI_API_KEY") if active_provider == "openai" else (os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")))
+
+    if not required_ok:
+        print("\n   ⚠️  WARNING: No API key configured for the active provider!")
         print("   You need at least one LLM API key to generate theses.")
         print("   See: https://github.com/federicodeponte/opendraft#setup")
 
-    return found_any
+    return required_ok
 
 
 def check_pdf_engines():

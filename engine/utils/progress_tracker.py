@@ -25,7 +25,7 @@ ACTIVITY_MESSAGES = {
     "starting_research": "Starting academic research...",
     "querying_crossref": "Querying CrossRef for peer-reviewed papers...",
     "querying_semantic_scholar": "Searching Semantic Scholar...",
-    "querying_gemini": "Using AI-powered search...",
+    "querying_web_search": "Using AI-powered search...",
     "scout_completed": "Found {sources_count} academic sources",
     "research_complete": "Research phase complete",
 

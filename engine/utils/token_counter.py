@@ -8,7 +8,17 @@ import re
 logger = logging.getLogger(__name__)
 
 
-def count_tokens(text: str, model_name: str = "gemini-2.0-flash") -> int:
+def _default_model_name() -> str:
+    """Return a reasonable default model for the active provider."""
+    import os
+
+    provider = (os.getenv('AI_PROVIDER', 'gemini').strip().lower())
+    if provider in {'codex', 'openai-codex', 'openai'}:
+        return os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
+    return os.getenv('GEMINI_MODEL', 'gemini-3-flash-preview')
+
+
+def count_tokens(text: str, model_name: str | None = None) -> int:
     """
     Count tokens in text using the appropriate method for the model.
 
@@ -25,6 +35,8 @@ def count_tokens(text: str, model_name: str = "gemini-2.0-flash") -> int:
     if not text:
         return 0
 
+    model_name = model_name or _default_model_name()
+
     # Try Gemini token counter first
     if "gemini" in model_name.lower():
         return _count_gemini_tokens(text, model_name)
@@ -35,7 +47,7 @@ def count_tokens(text: str, model_name: str = "gemini-2.0-flash") -> int:
         return _count_fallback_tokens(text)
 
 
-def count_prompt_tokens(prompt: str, model_name: str = "gemini-2.0-flash") -> int:
+def count_prompt_tokens(prompt: str, model_name: str | None = None) -> int:
     """
     Count tokens specifically for a prompt.
 
@@ -49,7 +61,7 @@ def count_prompt_tokens(prompt: str, model_name: str = "gemini-2.0-flash") -> in
     return count_tokens(prompt, model_name)
 
 
-def count_response_tokens(response: str, model_name: str = "gemini-2.0-flash") -> int:
+def count_response_tokens(response: str, model_name: str | None = None) -> int:
     """
     Count tokens specifically for a response.
 
@@ -163,7 +175,7 @@ def _count_fallback_tokens(text: str) -> int:
 
 
 def estimate_tokens_in_messages(
-    messages: list, model_name: str = "gemini-2.0-flash"
+    messages: list, model_name: str | None = None
 ) -> int:
     """
     Estimate total tokens in a list of messages.

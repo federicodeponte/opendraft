@@ -108,25 +108,50 @@ class FactCheckVerifier:
     """
     Verifies factual claims using web-grounded evidence.
 
-    Uses GeminiGroundedClient for web search and run_agent for
+    Uses a provider-neutral search backend when available and run_agent for
     claim-vs-evidence comparison. Produces a markdown report with
     find/replace corrections for false claims.
     """
 
-    def __init__(self, api_key: str, model: Any = None):
+    def __init__(self, api_key: str | None = None, model: Any = None, search_backend: Any = None):
         """
         Initialize the FactCheck verifier.
 
         Args:
-            api_key: Google API key for Gemini and grounded search
+            api_key: Provider API key (Gemini/OpenAI depending on active runtime)
             model: Configured model instance for judge LLM calls via run_agent
+            search_backend: Optional search backend with a search_paper() method
         """
-        from utils.api_citations.gemini_grounded import GeminiGroundedClient
-
         self.api_key = api_key
         self.model = model
-        self.grounded_client = GeminiGroundedClient(api_key=api_key)
         self._cache = FIFOCache(max_size=100, ttl_seconds=3600)
+
+        if search_backend is not None:
+            self.search_client = search_backend
+        else:
+            self.search_client = self._build_default_search_client(api_key)
+
+    def _build_default_search_client(self, api_key: str | None):
+        """Build a search client using the best available backend."""
+        import os
+
+        use_serper = os.getenv('USE_SERPER', 'false').lower() == 'true' or bool(os.getenv('SERPER_API_KEY'))
+        if use_serper:
+            try:
+                from utils.api_citations.serper_client import SerperClient
+                return SerperClient(validate_urls=False, timeout=15)
+            except Exception as e:
+                logger.warning(f"[FactCheck] Serper client unavailable: {e}")
+
+        # Fall back to Gemini grounded search only when a Google key is present.
+        if api_key or os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY'):
+            try:
+                from utils.api_citations.gemini_grounded import GeminiGroundedClient
+                return GeminiGroundedClient(api_key=api_key or os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY'))
+            except Exception as e:
+                logger.warning(f"[FactCheck] Gemini grounded client unavailable: {e}")
+
+        return None
 
     def _verify_single_claim(self, i: int, total: int, claim_obj: Dict[str, str]) -> Optional[Dict[str, Any]]:
         """
@@ -197,7 +222,7 @@ class FactCheckVerifier:
 
     def _search_evidence(self, claim: str) -> List[Dict[str, str]]:
         """
-        Use GeminiGroundedClient to find evidence for/against a claim.
+        Use the configured search backend to find evidence for/against a claim.
 
         Args:
             claim: The factual claim to search for
@@ -207,59 +232,58 @@ class FactCheckVerifier:
         """
         evidence = []
 
+        if self.search_client is None:
+            logger.warning("[FactCheck] No search backend available")
+            return evidence
+
         try:
-            prompt = (
-                f"Is this claim true or false? Find evidence:\n\n"
-                f"Claim: \"{claim}\"\n\n"
-                f"Search for the most reliable sources that confirm or deny this claim. "
-                f"Report what the evidence says with specific numbers, dates, or facts. "
-                f"Include source URLs."
-            )
+            if hasattr(self.search_client, '_generate_content_with_grounding'):
+                prompt = (
+                    f"Is this claim true or false? Find evidence:\n\n"
+                    f"Claim: \"{claim}\"\n\n"
+                    f"Search for the most reliable sources that confirm or deny this claim. "
+                    f"Report what the evidence says with specific numbers, dates, or facts. "
+                    f"Include source URLs."
+                )
 
-            response_data = self.grounded_client._generate_content_with_grounding(prompt)
+                response_data = self.search_client._generate_content_with_grounding(prompt)
 
-            if response_data:
-                candidates = response_data.get('candidates', [])
-                if candidates:
-                    candidate = candidates[0]
-                    content = candidate.get('content', {})
-                    parts = content.get('parts', [])
-                    text = parts[0].get('text', '') if parts else ''
+                if response_data:
+                    candidates = response_data.get('candidates', [])
+                    if candidates:
+                        candidate = candidates[0]
+                        content = candidate.get('content', {})
+                        parts = content.get('parts', [])
+                        text = parts[0].get('text', '') if parts else ''
 
-                    if text:
-                        evidence.append({
-                            'snippet': text[:1000],
-                            'url': '',
-                            'title': 'Gemini Grounded Search',
-                        })
-
-                    grounding_metadata = candidate.get('groundingMetadata', {})
-                    grounding_chunks = grounding_metadata.get('groundingChunks', [])
-
-                    for chunk in grounding_chunks:
-                        web = chunk.get('web', {})
-                        if web.get('uri'):
+                        if text:
                             evidence.append({
-                                'snippet': web.get('title', ''),
-                                'url': web.get('uri', ''),
-                                'title': web.get('title', 'Web Source'),
+                                'snippet': text[:1000],
+                                'url': '',
+                                'title': 'Grounded Search',
                             })
 
-        except Exception as e:
-            logger.warning(f"[FactCheck] Evidence search failed: {e}")
+                        grounding_metadata = candidate.get('groundingMetadata', {})
+                        grounding_chunks = grounding_metadata.get('groundingChunks', [])
 
-        # Fallback: try search_paper for additional evidence
-        if not evidence:
-            try:
-                result = self.grounded_client.search_paper(claim)
+                        for chunk in grounding_chunks:
+                            web = chunk.get('web', {})
+                            if web.get('uri'):
+                                evidence.append({
+                                    'snippet': web.get('title', ''),
+                                    'url': web.get('uri', ''),
+                                    'title': web.get('title', 'Web Source'),
+                                })
+            elif hasattr(self.search_client, 'search_paper'):
+                result = self.search_client.search_paper(claim)
                 if result:
                     evidence.append({
                         'snippet': result.get('snippet', ''),
                         'url': result.get('url', ''),
                         'title': result.get('title', 'Source'),
                     })
-            except Exception as e:
-                logger.warning(f"[FactCheck] Fallback search failed: {e}")
+        except Exception as e:
+            logger.warning(f"[FactCheck] Evidence search failed: {e}")
 
         return evidence
 
