@@ -5,12 +5,14 @@ Fallback Services for Web Search and Page Scraping
 Tools:
 - Serper.dev: Web search via Google SERP API (preferred)
 - DataForSEO: Web search via SERP API (2000 RPM) (legacy fallback)
-- Firecrawl: Page scraping with JavaScript rendering (preferred)
+- Tavily Extract: Page content extraction via Tavily API (preferred when TAVILY_API_KEY set)
+- Firecrawl: Page scraping with JavaScript rendering (fallback)
 - OpenPull: Page scraping with JavaScript rendering (crawl4ai + Playwright) (legacy)
 - Simple fallback: Basic requests-based scraping for non-JS pages
 
 Usage:
     from fallback_services import search_web_serper, scrape_page_with_firecrawl
+    from fallback_services import scrape_page_with_tavily
     # Legacy:
     from fallback_services import search_web_dataforseo, scrape_page_with_openpull
 """
@@ -100,14 +102,46 @@ def search_web_serper(
 
 
 # ==============================================================================
-# Firecrawl Page Scraping (Preferred)
+# Tavily Extract Page Scraping (Preferred when TAVILY_API_KEY is set)
+# ==============================================================================
+
+def scrape_page_with_tavily(url: str) -> Dict[str, Any]:
+    """
+    Extract webpage content using Tavily Extract API.
+
+    Args:
+        url: The URL to extract content from
+
+    Returns:
+        Dict with 'success', 'content', and 'error' if failed
+
+    Environment Variables Required:
+        TAVILY_API_KEY: Tavily API key
+    """
+    try:
+        from utils.tavily_extract_client import TavilyExtractClient
+
+        client = TavilyExtractClient()
+        if not client.enabled:
+            return {'success': False, 'error': 'Tavily Extract not configured', 'content': ''}
+        return client.scrape_url(url)
+
+    except ImportError:
+        logger.warning("tavily-python not installed, skipping Tavily Extract")
+        return {'success': False, 'error': 'tavily-python not installed', 'content': ''}
+    except Exception as e:
+        logger.warning(f"Tavily Extract failed: {e}")
+        return {'success': False, 'error': str(e), 'content': ''}
+
+
+# ==============================================================================
+# Firecrawl Page Scraping (Fallback after Tavily Extract)
 # ==============================================================================
 
 def scrape_page_with_firecrawl(url: str) -> Dict[str, Any]:
     """
-    Scrape a webpage using Firecrawl API.
-
-    Preferred over OpenPull/crawl4ai for reliability and JS rendering.
+    Scrape a webpage, trying Tavily Extract first (if configured),
+    then Firecrawl, then simple scraper as final fallback.
 
     Args:
         url: The URL to scrape
@@ -115,9 +149,18 @@ def scrape_page_with_firecrawl(url: str) -> Dict[str, Any]:
     Returns:
         Dict with 'success', 'content', and 'error' if failed
 
-    Environment Variables Required:
-        FIRECRAWL_API_KEY: Firecrawl API key
+    Environment Variables:
+        TAVILY_API_KEY: Tavily API key (enables Tavily Extract as primary)
+        FIRECRAWL_API_KEY: Firecrawl API key (secondary fallback)
     """
+    # Try Tavily Extract first when TAVILY_API_KEY is set
+    if os.environ.get('TAVILY_API_KEY'):
+        result = scrape_page_with_tavily(url)
+        if result.get('success'):
+            return result
+        logger.info(f"Tavily Extract failed for {url}, falling back to Firecrawl")
+
+    # Firecrawl as secondary
     try:
         from utils.firecrawl_client import FirecrawlClient
 
