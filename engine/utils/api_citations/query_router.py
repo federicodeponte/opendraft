@@ -59,13 +59,13 @@ class QueryRouter:
         >>> result.query_type
         'industry'
         >>> result.api_chain
-        ['gemini_grounded', 'semantic_scholar', 'crossref']
+        ['tavily', 'gemini_grounded', 'semantic_scholar', 'crossref']
 
         >>> result = router.classify_and_route("peer-reviewed studies on climate change")
         >>> result.query_type
         'academic'
         >>> result.api_chain
-        ['crossref', 'semantic_scholar', 'gemini_grounded']
+        ['crossref', 'semantic_scholar', 'tavily', 'gemini_grounded']
     """
 
     # Industry source indicators (organizations, document types)
@@ -274,9 +274,9 @@ class QueryRouter:
             List of API names in priority order
 
         API Priority Chains:
-        - industry: Gemini Grounded → Semantic Scholar → Crossref
-        - academic: Crossref → Semantic Scholar → Gemini Grounded
-        - mixed: Semantic Scholar → Gemini Grounded → Crossref
+        - industry: Tavily → Gemini Grounded → Semantic Scholar → Crossref
+        - academic: Crossref → Semantic Scholar → Tavily → Gemini Grounded
+        - mixed: Semantic Scholar → Tavily → Gemini Grounded → Crossref
         """
         if query_type == 'industry':
             # Prioritize web sources for industry queries
@@ -308,7 +308,7 @@ class QueryRouter:
             >>> result.query_type
             'industry'
             >>> result.api_chain[0]
-            'gemini_grounded'
+            'tavily'
         """
         query_type, confidence, patterns = self.classify_query(query)
         api_chain = self.get_api_chain(query_type)

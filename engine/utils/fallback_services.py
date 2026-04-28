@@ -120,10 +120,11 @@ def search_web_serper(
     """
     # Try Tavily first when configured
     if os.environ.get("TAVILY_API_KEY"):
+        logger.info("[search_web] Using Tavily as preferred web search provider")
         tavily_result = search_web_tavily(query, num_results)
         if tavily_result.get("success"):
             return tavily_result
-        logger.warning("Tavily returned no results, falling back to Serper")
+        logger.warning("[search_web] Tavily returned no results, falling back to Serper")
 
     try:
         from utils.api_citations.serper_client import SerperClient

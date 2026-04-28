@@ -870,7 +870,7 @@ class CitationResearcher:
             elif api_name == 'tavily' and self.use_tavily:
                 logger.debug(f"  → Calling Tavily Search API...")
                 metadata = self.tavily_client.search_paper(topic)
-                if metadata:
+                if metadata and (metadata.get('doi') or metadata.get('url')):
                     logger.info(
                         f"  ✓ Tavily found: {metadata.get('title', 'Unknown')[:80]}... (URL: {metadata.get('url', 'N/A')[:50]})"
                     )
