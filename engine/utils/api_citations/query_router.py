@@ -20,7 +20,7 @@ from dataclasses import dataclass
 
 # Type definitions
 QueryType = Literal['academic', 'industry', 'mixed']
-APIName = Literal['crossref', 'semantic_scholar', 'gemini_grounded']
+APIName = Literal['crossref', 'semantic_scholar', 'gemini_grounded', 'tavily']
 
 
 @dataclass
@@ -280,15 +280,15 @@ class QueryRouter:
         """
         if query_type == 'industry':
             # Prioritize web sources for industry queries
-            return ['gemini_grounded', 'semantic_scholar', 'crossref']
+            return ['tavily', 'gemini_grounded', 'semantic_scholar', 'crossref']
 
         elif query_type == 'academic':
             # Prioritize academic sources for scholarly queries
-            return ['crossref', 'semantic_scholar', 'gemini_grounded']
+            return ['crossref', 'semantic_scholar', 'tavily', 'gemini_grounded']
 
         else:  # mixed
             # Balanced approach for mixed queries
-            return ['semantic_scholar', 'gemini_grounded', 'crossref']
+            return ['semantic_scholar', 'tavily', 'gemini_grounded', 'crossref']
 
     def classify_and_route(self, query: str) -> QueryClassification:
         """
