@@ -10,10 +10,7 @@ import logging
 from typing import Optional, Dict, Any, List
 from urllib.parse import urlparse
 
-try:
-    import requests
-except ImportError:
-    requests = None
+import requests
 
 try:
     from dotenv import load_dotenv
@@ -21,66 +18,16 @@ except ImportError:
     load_dotenv = None
 
 from .base import BaseAPIClient, validate_author_name, validate_publication_year
-from .web_search_mixin import WebSearchMixin
+from .web_search_mixin import (
+    WebSearchMixin,
+    is_trusted_domain,
+    is_blocked_domain,
+    extract_year_from_url,
+    TRUSTED_INDUSTRY_DOMAINS,
+    BLOCKED_DOMAINS,
+)
 
 logger = logging.getLogger(__name__)
-
-
-# Domain filtering (shared with gemini_grounded.py)
-TRUSTED_INDUSTRY_DOMAINS = [
-    # Consulting firms
-    'mckinsey.com', 'bcg.com', 'bain.com', 'deloitte.com', 'pwc.com', 'kpmg.com', 'ey.com', 'accenture.com',
-    # International organizations
-    'who.int', 'oecd.org', 'worldbank.org', 'un.org', 'imf.org', 'wto.org', 'unesco.org',
-    # Industry analysts
-    'gartner.com', 'forrester.com', 'idc.com', 'statista.com',
-    # Government/academic TLDs
-    '.gov', '.edu', '.ac.uk', '.gov.uk', '.edu.au', '.ac.jp', '.edu.cn',
-    # News/quality journalism
-    'reuters.com', 'bbc.com', 'nytimes.com', 'ft.com', 'economist.com', 'wsj.com',
-    # Tech giants (official docs/research)
-    'research.google', 'ai.google', 'research.microsoft.com', 'research.ibm.com',
-    'openai.com', 'deepmind.com', 'anthropic.com',
-]
-
-BLOCKED_DOMAINS = [
-    # Blog indicators
-    '/blog/', '/blogs/', 'blog.', 'medium.com', 'substack.com', 'dev.to', 'hashnode.dev',
-    # Social media
-    'linkedin.com', 'twitter.com', 'facebook.com', 'instagram.com', 'tiktok.com',
-    # Video platforms
-    'youtube.com', 'vimeo.com',
-    # Q&A sites (not primary sources)
-    'quora.com', 'reddit.com', 'stackoverflow.com',
-    # Wikipedia (not primary source)
-    'wikipedia.org',
-    # User-generated hosting platforms
-    'github.io', 'gitlab.io', 'netlify.app', 'vercel.app', 'herokuapp.com',
-    # Academic aggregators (need DOI enrichment)
-    'semanticscholar.org', 'researchgate.net', 'academia.edu',
-]
-
-
-def is_trusted_domain(url: str) -> bool:
-    """Check if URL is from a trusted industry domain."""
-    url_lower = url.lower()
-    return any(domain in url_lower for domain in TRUSTED_INDUSTRY_DOMAINS)
-
-
-def is_blocked_domain(url: str) -> bool:
-    """Check if URL is from a blocked domain."""
-    url_lower = url.lower()
-    return any(blocked in url_lower for blocked in BLOCKED_DOMAINS)
-
-
-def extract_year_from_url(url: str) -> Optional[int]:
-    """Extract publication year from URL path patterns."""
-    if not url:
-        return None
-    match = re.search(r'/20(1[0-9]|2[0-6])/', url)
-    if match:
-        return int(f"20{match.group(1)}")
-    return None
 
 
 class SerperClient(WebSearchMixin, BaseAPIClient):

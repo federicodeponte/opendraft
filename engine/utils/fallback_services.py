@@ -58,7 +58,7 @@ def with_retry_sync(func, max_retries=3, base_delay=0.5):
 
 
 # ==============================================================================
-# Serper.dev Web Search (Preferred)
+# Web Search (Tavily preferred, Serper fallback)
 # ==============================================================================
 
 def search_web_tavily(
