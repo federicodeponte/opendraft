@@ -93,7 +93,60 @@ python scripts/eval_regression.py --baseline reports/baseline.json
 python scripts/eval_cross_model.py --providers gemini,openai,anthropic
 ```
 
+## Benchmark Topic Dataset
+
+To support reproducible evaluation, OpenDraft includes a benchmark dataset containing 20 research topics across multiple academic domains.
+
+### Covered Domains
+
+- Computer Science
+- Medicine
+- Economics
+- Social Science
+- Physics
+- Biology
+
+### Dataset Structure
+
+Each topic includes:
+
+- Topic name
+- Academic domain
+- Canonical research papers associated with the topic
+
+The canonical papers act as reference sources for evaluating:
+
+- Citation accuracy
+- Source coverage
+- Retrieval quality
+- Cross-model consistency
+- Regression testing
+
+### Dataset Location
+
+```text
+data/eval_topics.json
+```
+
+### Evaluation Criteria
+
+The benchmark dataset is intended to provide a consistent evaluation baseline across different OpenDraft evaluation suites.
+
+Evaluations using this dataset may measure:
+
+| Metric | Description |
+|----------|-------------|
+| Citation Verification Rate | Percentage of citations that can be successfully verified against trusted databases |
+| Source Coverage | Whether canonical papers are retrieved during the research phase |
+| Retrieval Recall | Number of expected sources discovered within the retrieved set |
+| Cross-Model Consistency | Differences in retrieval and citation quality across LLM providers |
+| Regression Stability | Changes in evaluation metrics across releases and code changes |
+
+The dataset should remain stable over time so benchmark results can be compared across versions of OpenDraft.
+
+
 ## Contributing to Evals
+```md
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup. Evaluation PRs are welcome:
 
