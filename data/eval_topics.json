@@ -1,0 +1,338 @@
+[
+  {
+    "id": "cs-transformer-attention",
+    "domain": "computer_science",
+    "topic": "Attention-based transformer architectures for sequence modeling",
+    "prompt": "Evaluate how attention-only transformer architectures changed sequence modeling compared with recurrent and convolutional approaches.",
+    "canonical_sources": [
+      {
+        "title": "Attention Is All You Need",
+        "authors": ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar", "Jakob Uszkoreit"],
+        "year": 2017,
+        "arxiv": "1706.03762"
+      },
+      {
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        "authors": ["Jacob Devlin", "Ming-Wei Chang", "Kenton Lee", "Kristina Toutanova"],
+        "year": 2018,
+        "arxiv": "1810.04805"
+      }
+    ],
+    "expected_terms": ["self-attention", "positional encoding", "pre-training", "sequence modeling"]
+  },
+  {
+    "id": "cs-deep-residual-learning",
+    "domain": "computer_science",
+    "topic": "Deep residual networks for image recognition",
+    "prompt": "Analyze why residual connections enabled much deeper convolutional neural networks and how they affected image recognition benchmarks.",
+    "canonical_sources": [
+      {
+        "title": "Deep Residual Learning for Image Recognition",
+        "authors": ["Kaiming He", "Xiangyu Zhang", "Shaoqing Ren", "Jian Sun"],
+        "year": 2016,
+        "doi": "10.1109/CVPR.2016.90"
+      }
+    ],
+    "expected_terms": ["residual connection", "degradation problem", "ImageNet", "convolutional neural network"]
+  },
+  {
+    "id": "cs-differential-privacy",
+    "domain": "computer_science",
+    "topic": "Differential privacy as a framework for privacy-preserving data analysis",
+    "prompt": "Explain differential privacy, its mathematical privacy guarantee, and its impact on practical statistical data release.",
+    "canonical_sources": [
+      {
+        "title": "Calibrating Noise to Sensitivity in Private Data Analysis",
+        "authors": ["Cynthia Dwork", "Frank McSherry", "Kobbi Nissim", "Adam Smith"],
+        "year": 2006,
+        "doi": "10.1007/11681878_14"
+      },
+      {
+        "title": "Differential Privacy",
+        "authors": ["Cynthia Dwork"],
+        "year": 2006,
+        "doi": "10.1007/11787006_1"
+      }
+    ],
+    "expected_terms": ["epsilon", "sensitivity", "Laplace mechanism", "privacy guarantee"]
+  },
+  {
+    "id": "medicine-crispr-cas9",
+    "domain": "medicine",
+    "topic": "CRISPR-Cas9 genome editing and therapeutic applications",
+    "prompt": "Assess the scientific basis of CRISPR-Cas9 genome editing and the challenges for safe therapeutic use.",
+    "canonical_sources": [
+      {
+        "title": "A Programmable Dual-RNA-Guided DNA Endonuclease in Adaptive Bacterial Immunity",
+        "authors": ["Martin Jinek", "Krzysztof Chylinski", "Ines Fonfara", "Michael Hauer", "Jennifer A. Doudna", "Emmanuelle Charpentier"],
+        "year": 2012,
+        "doi": "10.1126/science.1225829"
+      },
+      {
+        "title": "Multiplex Genome Engineering Using CRISPR/Cas Systems",
+        "authors": ["Le Cong", "F. Ann Ran", "David Cox", "Shuailiang Lin", "Robert Barretto", "Naomi Habib", "Patrick D. Hsu", "Xuebing Wu", "Wenyan Jiang", "Luciano A. Marraffini", "Feng Zhang"],
+        "year": 2013,
+        "doi": "10.1126/science.1231143"
+      }
+    ],
+    "expected_terms": ["Cas9", "guide RNA", "off-target effects", "genome editing"]
+  },
+  {
+    "id": "medicine-mrna-vaccines",
+    "domain": "medicine",
+    "topic": "mRNA vaccine efficacy and safety in COVID-19",
+    "prompt": "Compare the pivotal clinical evidence for mRNA COVID-19 vaccines and discuss implications for vaccine platform development.",
+    "canonical_sources": [
+      {
+        "title": "Safety and Efficacy of the BNT162b2 mRNA Covid-19 Vaccine",
+        "authors": ["Fernando P. Polack", "Stephen J. Thomas", "Nicholas Kitchin"],
+        "year": 2020,
+        "doi": "10.1056/NEJMoa2034577"
+      },
+      {
+        "title": "Efficacy and Safety of the mRNA-1273 SARS-CoV-2 Vaccine",
+        "authors": ["Lindsey R. Baden", "Hana M. El Sahly", "Brandon Essink"],
+        "year": 2021,
+        "doi": "10.1056/NEJMoa2035389"
+      }
+    ],
+    "expected_terms": ["BNT162b2", "mRNA-1273", "phase 3 trial", "vaccine efficacy"]
+  },
+  {
+    "id": "medicine-sepsis-definitions",
+    "domain": "medicine",
+    "topic": "Clinical definitions of sepsis and septic shock",
+    "prompt": "Review the Sepsis-3 consensus definitions and their implications for diagnosis, triage, and outcome measurement.",
+    "canonical_sources": [
+      {
+        "title": "The Third International Consensus Definitions for Sepsis and Septic Shock (Sepsis-3)",
+        "authors": ["Mervyn Singer", "Clifford S. Deutschman", "Christopher Warren Seymour"],
+        "year": 2016,
+        "doi": "10.1001/jama.2016.0287"
+      }
+    ],
+    "expected_terms": ["SOFA", "qSOFA", "organ dysfunction", "septic shock"]
+  },
+  {
+    "id": "economics-minimum-wage",
+    "domain": "economics",
+    "topic": "Minimum wage effects on employment",
+    "prompt": "Evaluate the empirical debate on minimum wage increases and employment using natural experiment evidence.",
+    "canonical_sources": [
+      {
+        "title": "Minimum Wages and Employment: A Case Study of the Fast-Food Industry in New Jersey and Pennsylvania",
+        "authors": ["David Card", "Alan B. Krueger"],
+        "year": 1994,
+        "doi": "10.1257/aer.84.4.772"
+      }
+    ],
+    "expected_terms": ["natural experiment", "employment elasticity", "difference-in-differences", "fast-food industry"]
+  },
+  {
+    "id": "economics-prospect-theory",
+    "domain": "economics",
+    "topic": "Prospect theory and decision-making under risk",
+    "prompt": "Explain prospect theory and how it departs from expected utility theory in modeling choices under uncertainty.",
+    "canonical_sources": [
+      {
+        "title": "Prospect Theory: An Analysis of Decision under Risk",
+        "authors": ["Daniel Kahneman", "Amos Tversky"],
+        "year": 1979,
+        "doi": "10.2307/1914185"
+      }
+    ],
+    "expected_terms": ["loss aversion", "reference point", "value function", "probability weighting"]
+  },
+  {
+    "id": "economics-synthetic-control",
+    "domain": "economics",
+    "topic": "Synthetic control methods for policy evaluation",
+    "prompt": "Assess the synthetic control method as a tool for estimating causal effects in comparative case studies.",
+    "canonical_sources": [
+      {
+        "title": "Synthetic Control Methods for Comparative Case Studies: Estimating the Effect of California's Tobacco Control Program",
+        "authors": ["Alberto Abadie", "Alexis Diamond", "Jens Hainmueller"],
+        "year": 2010,
+        "doi": "10.1198/jasa.2009.ap08746"
+      }
+    ],
+    "expected_terms": ["counterfactual", "weighted donor pool", "policy evaluation", "causal inference"]
+  },
+  {
+    "id": "social-science-social-capital",
+    "domain": "social_science",
+    "topic": "Social capital and civic participation",
+    "prompt": "Discuss the decline of civic participation and the role of social capital in democratic societies.",
+    "canonical_sources": [
+      {
+        "title": "Bowling Alone: America's Declining Social Capital",
+        "authors": ["Robert D. Putnam"],
+        "year": 1995,
+        "doi": "10.1353/jod.1995.0002"
+      }
+    ],
+    "expected_terms": ["social capital", "civic engagement", "trust", "associational life"]
+  },
+  {
+    "id": "social-science-intergroup-contact",
+    "domain": "social_science",
+    "topic": "Intergroup contact and prejudice reduction",
+    "prompt": "Evaluate the evidence that structured intergroup contact can reduce prejudice across social groups.",
+    "canonical_sources": [
+      {
+        "title": "A Meta-Analytic Test of Intergroup Contact Theory",
+        "authors": ["Thomas F. Pettigrew", "Linda R. Tropp"],
+        "year": 2006,
+        "doi": "10.1037/0022-3514.90.5.751"
+      }
+    ],
+    "expected_terms": ["contact hypothesis", "prejudice reduction", "intergroup contact", "meta-analysis"]
+  },
+  {
+    "id": "social-science-stereotype-threat",
+    "domain": "social_science",
+    "topic": "Stereotype threat and academic performance",
+    "prompt": "Analyze stereotype threat as a social-psychological mechanism affecting test performance and educational outcomes.",
+    "canonical_sources": [
+      {
+        "title": "Stereotype Threat and the Intellectual Test Performance of African Americans",
+        "authors": ["Claude M. Steele", "Joshua Aronson"],
+        "year": 1995,
+        "doi": "10.1037/0022-3514.69.5.797"
+      }
+    ],
+    "expected_terms": ["stereotype threat", "test performance", "identity", "social psychology"]
+  },
+  {
+    "id": "physics-higgs-boson",
+    "domain": "physics",
+    "topic": "Experimental discovery of the Higgs boson",
+    "prompt": "Explain the experimental evidence for the Higgs boson discovery and its importance for the Standard Model.",
+    "canonical_sources": [
+      {
+        "title": "Observation of a New Particle in the Search for the Standard Model Higgs Boson with the ATLAS Detector at the LHC",
+        "authors": ["ATLAS Collaboration"],
+        "year": 2012,
+        "doi": "10.1016/j.physletb.2012.08.020"
+      },
+      {
+        "title": "Observation of a New Boson at a Mass of 125 GeV with the CMS Experiment at the LHC",
+        "authors": ["CMS Collaboration"],
+        "year": 2012,
+        "doi": "10.1016/j.physletb.2012.08.021"
+      }
+    ],
+    "expected_terms": ["Large Hadron Collider", "Standard Model", "ATLAS", "CMS"]
+  },
+  {
+    "id": "physics-gravitational-waves",
+    "domain": "physics",
+    "topic": "Direct detection of gravitational waves",
+    "prompt": "Assess the significance of the first direct gravitational-wave detection for astrophysics and general relativity.",
+    "canonical_sources": [
+      {
+        "title": "Observation of Gravitational Waves from a Binary Black Hole Merger",
+        "authors": ["LIGO Scientific Collaboration", "Virgo Collaboration"],
+        "year": 2016,
+        "doi": "10.1103/PhysRevLett.116.061102"
+      }
+    ],
+    "expected_terms": ["binary black hole", "LIGO", "general relativity", "strain"]
+  },
+  {
+    "id": "physics-graphene",
+    "domain": "physics",
+    "topic": "Graphene and two-dimensional materials",
+    "prompt": "Review the experimental isolation of graphene and its consequences for two-dimensional materials research.",
+    "canonical_sources": [
+      {
+        "title": "Electric Field Effect in Atomically Thin Carbon Films",
+        "authors": ["K. S. Novoselov", "A. K. Geim", "S. V. Morozov"],
+        "year": 2004,
+        "doi": "10.1126/science.1102896"
+      }
+    ],
+    "expected_terms": ["graphene", "two-dimensional materials", "field effect", "carbon films"]
+  },
+  {
+    "id": "biology-human-microbiome",
+    "domain": "biology",
+    "topic": "Human microbiome composition and health",
+    "prompt": "Summarize how the Human Microbiome Project characterized microbial communities and why this matters for health research.",
+    "canonical_sources": [
+      {
+        "title": "Structure, Function and Diversity of the Healthy Human Microbiome",
+        "authors": ["The Human Microbiome Project Consortium"],
+        "year": 2012,
+        "doi": "10.1038/nature11234"
+      }
+    ],
+    "expected_terms": ["microbiome", "metagenomics", "community composition", "host health"]
+  },
+  {
+    "id": "biology-alphafold",
+    "domain": "biology",
+    "topic": "Protein structure prediction with AlphaFold",
+    "prompt": "Evaluate AlphaFold's contribution to protein structure prediction and its implications for biological discovery.",
+    "canonical_sources": [
+      {
+        "title": "Highly Accurate Protein Structure Prediction with AlphaFold",
+        "authors": ["John Jumper", "Richard Evans", "Alexander Pritzel", "Tim Green", "Michael Figurnov"],
+        "year": 2021,
+        "doi": "10.1038/s41586-021-03819-2"
+      }
+    ],
+    "expected_terms": ["protein folding", "AlphaFold", "structure prediction", "CASP"]
+  },
+  {
+    "id": "biology-biodiversity-ecosystem-function",
+    "domain": "biology",
+    "topic": "Biodiversity and ecosystem functioning",
+    "prompt": "Analyze evidence that biodiversity contributes to ecosystem functioning and ecosystem services.",
+    "canonical_sources": [
+      {
+        "title": "Biodiversity Loss and Its Impact on Humanity",
+        "authors": ["Bradley J. Cardinale", "J. Emmett Duffy", "Andrew Gonzalez"],
+        "year": 2012,
+        "doi": "10.1038/nature11148"
+      }
+    ],
+    "expected_terms": ["ecosystem services", "biodiversity loss", "ecosystem functioning", "species richness"]
+  },
+  {
+    "id": "meta-science-reproducibility",
+    "domain": "meta_science",
+    "topic": "Reproducibility and replication in psychology",
+    "prompt": "Discuss the replication crisis using large-scale attempts to reproduce psychology findings.",
+    "canonical_sources": [
+      {
+        "title": "Estimating the Reproducibility of Psychological Science",
+        "authors": ["Open Science Collaboration"],
+        "year": 2015,
+        "doi": "10.1126/science.aac4716"
+      }
+    ],
+    "expected_terms": ["replication", "reproducibility", "open science", "statistical power"]
+  },
+  {
+    "id": "environment-planetary-boundaries",
+    "domain": "environmental_science",
+    "topic": "Planetary boundaries and global environmental change",
+    "prompt": "Explain the planetary boundaries framework and how it is used to reason about global environmental risks.",
+    "canonical_sources": [
+      {
+        "title": "A Safe Operating Space for Humanity",
+        "authors": ["Johan Rockstrom", "Will Steffen", "Kevin Noone"],
+        "year": 2009,
+        "doi": "10.1038/461472a"
+      },
+      {
+        "title": "Planetary Boundaries: Guiding Human Development on a Changing Planet",
+        "authors": ["Will Steffen", "Katherine Richardson", "Johan Rockstrom"],
+        "year": 2015,
+        "doi": "10.1126/science.1259855"
+      }
+    ],
+    "expected_terms": ["safe operating space", "Earth system", "planetary boundaries", "Anthropocene"]
+  }
+]
