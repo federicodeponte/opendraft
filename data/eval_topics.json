@@ -1,0 +1,107 @@
+[
+{
+"topic": "Transformer Architecture",
+"domain": "Computer Science",
+"canonical_papers": ["Attention Is All You Need (2017)"]
+},
+{
+"topic": "Convolutional Neural Networks",
+"domain": "Computer Science",
+"canonical_papers": ["ImageNet Classification with Deep Convolutional Neural Networks (2012)"]
+},
+{
+"topic": "Reinforcement Learning",
+"domain": "Computer Science",
+"canonical_papers": ["Human-level control through deep reinforcement learning (2015)"]
+},
+{
+"topic": "Graph Neural Networks",
+"domain": "Computer Science",
+"canonical_papers": ["The Graph Neural Network Model (2009)"]
+},
+
+{
+"topic": "mRNA Vaccines",
+"domain": "Medicine",
+"canonical_papers": ["mRNA vaccines — a new era in vaccinology (2018)"]
+},
+{
+"topic": "Cancer Immunotherapy",
+"domain": "Medicine",
+"canonical_papers": ["The blockade of immune checkpoints in cancer immunotherapy (2012)"]
+},
+{
+"topic": "COVID-19 Epidemiology",
+"domain": "Medicine",
+"canonical_papers": ["Clinical features of patients infected with 2019 novel coronavirus in Wuhan, China (2020)"]
+},
+{
+"topic": "Precision Medicine",
+"domain": "Medicine",
+"canonical_papers": ["Precision Medicine Initiative Cohort Program (2015)"]
+},
+
+{
+"topic": "Behavioral Economics",
+"domain": "Economics",
+"canonical_papers": ["Prospect Theory: An Analysis of Decision under Risk (1979)"]
+},
+{
+"topic": "Economic Growth",
+"domain": "Economics",
+"canonical_papers": ["A Contribution to the Theory of Economic Growth (1956)"]
+},
+{
+"topic": "Market Efficiency",
+"domain": "Economics",
+"canonical_papers": ["Efficient Capital Markets: A Review of Theory and Empirical Work (1970)"]
+},
+
+{
+"topic": "Social Capital",
+"domain": "Social Science",
+"canonical_papers": ["Bowling Alone: America's Declining Social Capital (1995)"]
+},
+{
+"topic": "Digital Inequality",
+"domain": "Social Science",
+"canonical_papers": ["The Deepening Divide: Inequality in the Information Society (2001)"]
+},
+{
+"topic": "Collective Action",
+"domain": "Social Science",
+"canonical_papers": ["The Logic of Collective Action (1965)"]
+},
+
+{
+"topic": "Quantum Entanglement",
+"domain": "Physics",
+"canonical_papers": ["Can Quantum-Mechanical Description of Physical Reality Be Considered Complete? (1935)"]
+},
+{
+"topic": "Higgs Boson",
+"domain": "Physics",
+"canonical_papers": ["Broken Symmetries and the Masses of Gauge Bosons (1964)"]
+},
+{
+"topic": "Gravitational Waves",
+"domain": "Physics",
+"canonical_papers": ["Observation of Gravitational Waves from a Binary Black Hole Merger (2016)"]
+},
+
+{
+"topic": "CRISPR Gene Editing",
+"domain": "Biology",
+"canonical_papers": ["A Programmable Dual-RNA-Guided DNA Endonuclease in Adaptive Bacterial Immunity (2012)"]
+},
+{
+"topic": "Evolution by Natural Selection",
+"domain": "Biology",
+"canonical_papers": ["On the Origin of Species (1859)"]
+},
+{
+"topic": "Human Genome Project",
+"domain": "Biology",
+"canonical_papers": ["Initial sequencing and analysis of the human genome (2001)"]
+}
+]
