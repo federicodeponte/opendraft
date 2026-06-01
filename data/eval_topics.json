@@ -1,0 +1,27 @@
+[
+  {
+    "id": "cs_transformer_architecture",
+    "topic": "The impact of transformer architectures on modern natural language processing",
+    "academic_level": "research_paper"
+  },
+  {
+    "id": "medicine_ai_diagnostics",
+    "topic": "The role of artificial intelligence in improving medical diagnostic accuracy",
+    "academic_level": "research_paper"
+  },
+  {
+    "id": "economics_remote_work",
+    "topic": "Remote work adoption and its effects on urban labor markets",
+    "academic_level": "research_paper"
+  },
+  {
+    "id": "social_media_polarization",
+    "topic": "Social media recommendation systems and political polarization",
+    "academic_level": "research_paper"
+  },
+  {
+    "id": "climate_energy_transition",
+    "topic": "Renewable energy transitions and grid reliability in developed economies",
+    "academic_level": "research_paper"
+  }
+]
