@@ -67,7 +67,7 @@ PROVIDER_META: Dict[str, Dict] = {
     "claude": {
         "env_value": "claude",
         "model_env": "ANTHROPIC_MODEL",
-        "default_model": "claude-sonnet-4-5",
+        "default_model": "claude-sonnet-4-20250514",
         "api_key_env": "ANTHROPIC_API_KEY",
         "display": "Anthropic Claude",
     },
