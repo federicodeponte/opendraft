@@ -86,8 +86,11 @@ OpenDraft is an open-source research drafting engine with 19 specialized agents.
 # Run full evaluation suite
 python scripts/eval_citation_accuracy.py --topics data/eval_topics.json --output reports/
 
-# Run regression test against golden topics
-python scripts/eval_regression.py --baseline reports/baseline.json
+# Run regression test against existing golden-topic drafts
+python scripts/eval_regression.py --drafts-dir reports/eval_drafts --baseline reports/baseline.json
+
+# Or generate fresh drafts before measuring (requires configured API keys)
+python scripts/eval_regression.py --generate --baseline reports/baseline.json
 
 # Generate comparison report across models
 python scripts/eval_cross_model.py --providers gemini,openai,anthropic

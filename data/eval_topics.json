@@ -1,0 +1,27 @@
+[
+  {
+    "id": "rag_reliability",
+    "topic": "Reliability evaluation methods for retrieval-augmented generation systems",
+    "level": "research_paper"
+  },
+  {
+    "id": "ai_citation_integrity",
+    "topic": "Citation integrity and hallucination detection in AI-assisted academic writing",
+    "level": "research_paper"
+  },
+  {
+    "id": "clinical_llm_safety",
+    "topic": "Safety evaluation frameworks for large language models in clinical decision support",
+    "level": "research_paper"
+  },
+  {
+    "id": "education_ai_feedback",
+    "topic": "Effects of generative AI feedback on higher education writing outcomes",
+    "level": "research_paper"
+  },
+  {
+    "id": "agentic_research_workflows",
+    "topic": "Multi-agent workflows for source-grounded literature review automation",
+    "level": "research_paper"
+  }
+]
