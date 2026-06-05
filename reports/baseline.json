@@ -1,0 +1,57 @@
+{
+  "topic_001": {
+    "citation_score": 25.0,
+    "completeness_score": 25.0,
+    "passed": 1.0,
+    "structure_score": 10.0,
+    "total_citation_refs": 15.0,
+    "total_score": 60.0,
+    "unique_citations": 15.0,
+    "word_count": 1673.0,
+    "word_count_score": 0.0
+  },
+  "topic_002": {
+    "citation_score": 25.0,
+    "completeness_score": 25.0,
+    "passed": 1.0,
+    "structure_score": 10.0,
+    "total_citation_refs": 15.0,
+    "total_score": 60.0,
+    "unique_citations": 15.0,
+    "word_count": 1673.0,
+    "word_count_score": 0.0
+  },
+  "topic_003": {
+    "citation_score": 25.0,
+    "completeness_score": 25.0,
+    "passed": 1.0,
+    "structure_score": 10.0,
+    "total_citation_refs": 15.0,
+    "total_score": 60.0,
+    "unique_citations": 15.0,
+    "word_count": 1673.0,
+    "word_count_score": 0.0
+  },
+  "topic_004": {
+    "citation_score": 25.0,
+    "completeness_score": 25.0,
+    "passed": 1.0,
+    "structure_score": 10.0,
+    "total_citation_refs": 15.0,
+    "total_score": 60.0,
+    "unique_citations": 15.0,
+    "word_count": 1677.0,
+    "word_count_score": 0.0
+  },
+  "topic_005": {
+    "citation_score": 25.0,
+    "completeness_score": 25.0,
+    "passed": 1.0,
+    "structure_score": 10.0,
+    "total_citation_refs": 15.0,
+    "total_score": 60.0,
+    "unique_citations": 15.0,
+    "word_count": 1681.0,
+    "word_count_score": 0.0
+  }
+}

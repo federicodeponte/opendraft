@@ -1,0 +1,57 @@
+[
+  {
+    "id": "topic_001",
+    "domain": "computer_science",
+    "topic": "Attention mechanisms in transformer architectures",
+    "canonical_papers": [
+      "Vaswani et al., 'Attention Is All You Need', NeurIPS 2017",
+      "Devlin et al., 'BERT: Pre-training of Deep Bidirectional Transformers', NAACL 2019"
+    ],
+    "expected_citation_count_min": 10,
+    "expected_citation_count_max": 25
+  },
+  {
+    "id": "topic_002",
+    "domain": "medicine",
+    "topic": "mRNA vaccine technology and immunogenicity",
+    "canonical_papers": [
+      "Pardi et al., 'mRNAs as vaccines for immunotherapy and prophylaxis', Nature Reviews Drug Discovery 2015",
+      "Polack et al., 'Safety and Efficacy of the BNT162b2 mRNA Covid-19 Vaccine', NEJM 2020"
+    ],
+    "expected_citation_count_min": 8,
+    "expected_citation_count_max": 20
+  },
+  {
+    "id": "topic_003",
+    "domain": "economics",
+    "topic": "Cryptocurrency and decentralized finance (DeFi)",
+    "canonical_papers": [
+      "Cong et al., 'Blockchain Technology and Finance', Foundations and Trends in Finance 2021",
+      "Biais et al., 'The Economics of Cryptocurrencies and Token ICOs', Review of Finance 2020"
+    ],
+    "expected_citation_count_min": 5,
+    "expected_citation_count_max": 15
+  },
+  {
+    "id": "topic_004",
+    "domain": "social_science",
+    "topic": "Social media effects on political polarization",
+    "canonical_papers": [
+      "Bakshy et al., 'Exposure to ideologically diverse news and opinion on Facebook', Science 2015",
+      "Guess et al., 'Social media and political communication: perspectives from political science', Annual Review of Political Science 2020"
+    ],
+    "expected_citation_count_min": 5,
+    "expected_citation_count_max": 15
+  },
+  {
+    "id": "topic_005",
+    "domain": "physics",
+    "topic": "Quantum error correction and fault-tolerant quantum computing",
+    "canonical_papers": [
+      "Devitt et al., 'Quantum error correction for beginners', Reports on Progress in Physics 2013",
+      "Preskill, 'Quantum Computing in the NISQ era and beyond', Quantum 2018"
+    ],
+    "expected_citation_count_min": 5,
+    "expected_citation_count_max": 15
+  }
+]
