@@ -33,6 +33,29 @@ except ImportError:
     pass
 
 
+# Default model name per provider (used when no provider-specific env var is set)
+_DEFAULT_MODELS = {
+    'gemini': 'gemini-3-pro-preview',
+    'openai': 'gpt-4.1-nano',
+    'claude': 'claude-sonnet-4-6',
+}
+
+# Env var holding the model name for each provider
+_MODEL_ENV_VARS = {
+    'gemini': 'GEMINI_MODEL',
+    'openai': 'OPENAI_MODEL',
+    'claude': 'ANTHROPIC_MODEL',
+}
+
+
+def _default_model_name() -> str:
+    """Resolve the model name from the provider-specific env var, with a sensible default."""
+    provider = os.getenv('AI_PROVIDER', 'gemini')
+    env_var = _MODEL_ENV_VARS.get(provider, 'GEMINI_MODEL')
+    default = _DEFAULT_MODELS.get(provider, _DEFAULT_MODELS['gemini'])
+    return os.getenv(env_var, default)
+
+
 @dataclass
 class ModelConfig:
     """
@@ -43,13 +66,7 @@ class ModelConfig:
     provider: Literal['gemini', 'claude', 'openai'] = field(
         default_factory=lambda: os.getenv('AI_PROVIDER', 'gemini')
     )
-    model_name: str = field(
-        default_factory=lambda: (
-            os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
-            if os.getenv('AI_PROVIDER') == 'openai'
-            else os.getenv('GEMINI_MODEL', 'gemini-3-pro-preview')
-        )
-    )
+    model_name: str = field(default_factory=lambda: _default_model_name())
     temperature: float = 0.7
     max_output_tokens: Optional[int] = None
     api_key: Optional[str] = None
@@ -66,20 +83,19 @@ class ModelConfig:
             'gemini-1.5-pro',
         ]
 
-        valid_openai_models = [
-            'gpt-4.1-nano',
-        ]
-
         if self.provider == 'gemini' and self.model_name not in valid_gemini_models:
             raise ValueError(
                 f"Invalid Gemini model: {self.model_name}. "
                 f"Valid options: {', '.join(valid_gemini_models)}"
             )
 
-        if self.provider == 'openai' and self.model_name not in valid_openai_models:
+        # OpenAI and Claude model names are not whitelisted: with a configurable
+        # base URL (proxies, gateways, self-hosted endpoints) the set of valid
+        # names is open-ended. Just require a non-empty value.
+        if self.provider in ('openai', 'claude') and not self.model_name:
             raise ValueError(
-                f"Invalid OpenAI model: {self.model_name}. "
-                f"Valid options: {', '.join(valid_openai_models)}"
+                f"A model name is required for the '{self.provider}' provider. "
+                f"Set {_MODEL_ENV_VARS[self.provider]} in your .env file."
             )
 
 
@@ -128,6 +144,14 @@ class AppConfig:
     google_api_key_fallback_3: str = field(default_factory=lambda: os.getenv('GOOGLE_API_KEY_FALLBACK_3', ''))
     anthropic_api_key: str = field(default_factory=lambda: os.getenv('ANTHROPIC_API_KEY', ''))
     openai_api_key: str = field(default_factory=lambda: os.getenv('OPENAI_API_KEY', ''))
+
+    # API base URLs (configurable for proxies, gateways, or self-hosted endpoints)
+    anthropic_base_url: str = field(
+        default_factory=lambda: os.getenv('ANTHROPIC_BASE_URL', 'https://api.anthropic.com')
+    )
+    openai_base_url: str = field(
+        default_factory=lambda: os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+    )
 
     # Sub-configurations
     model: ModelConfig = field(default_factory=ModelConfig)
