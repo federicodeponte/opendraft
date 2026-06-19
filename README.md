@@ -23,10 +23,7 @@
 </p>
 
 <p align="center">
-  <video width="900" autoplay loop muted playsinline>
-    <source src="assets/demo.mp4" type="video/mp4">
-    <source src="assets/demo.webm" type="video/webm">
-  </video>
+  <img src="assets/demo.gif" width="900" alt="OpenDraft generating a source-grounded research paper from a single prompt, with verified citations and a typeset PDF">
 </p>
 
 ---
