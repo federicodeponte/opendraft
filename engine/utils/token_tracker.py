@@ -57,13 +57,13 @@ class TokenTracker:
     Tracks token usage across the entire draft generation pipeline.
 
     Usage:
-        tracker = TokenTracker(model_name="gemini-3-pro-preview")
+        tracker = TokenTracker(model_name="gemini-3.1-pro-preview")
         tracker.add_call(stage="scribe", input_tokens=5000, output_tokens=2000)
         tracker.add_call(stage="architect", input_tokens=3000, output_tokens=1500)
         tracker.print_report()
     """
 
-    def __init__(self, model_name: str = "gemini-3-pro-preview"):
+    def __init__(self, model_name: str = "gemini-3.1-pro-preview"):
         self.model_name = model_name
         self.calls: List[APICall] = []
         self._start_time = time.time()

@@ -47,7 +47,7 @@ class ModelConfig:
         default_factory=lambda: (
             os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
             if os.getenv('AI_PROVIDER') == 'openai'
-            else os.getenv('GEMINI_MODEL', 'gemini-3-pro-preview')
+            else os.getenv('GEMINI_MODEL', 'gemini-3.1-pro-preview')
         )
     )
     temperature: float = 0.7
@@ -57,7 +57,7 @@ class ModelConfig:
     def __post_init__(self):
         """Validate model configuration."""
         valid_gemini_models = [
-            'gemini-3-pro-preview',    # Pro model for complex tasks
+            'gemini-3.1-pro-preview',    # Pro model for complex tasks
             'gemini-3-flash-preview',  # Primary flash model (supports JSON output)
             'gemini-2.5-pro',          # Legacy support
             'gemini-2.5-flash',        # Legacy support
@@ -87,7 +87,7 @@ class ModelConfig:
 class ValidationConfig:
     """Configuration for validation agents (Skeptic, Verifier, Referee, FactCheck)."""
     use_pro_model: bool = field(default_factory=lambda: os.getenv('USE_PRO_FOR_VALIDATION', 'false').lower() == 'true')
-    pro_model_name: str = 'gemini-3-pro-preview'
+    pro_model_name: str = 'gemini-3.1-pro-preview'
     validate_per_section: bool = True  # Always validate each section independently
     enable_factcheck: bool = field(
         default_factory=lambda: os.getenv('ENABLE_FACTCHECK', 'true').lower() == 'true'
