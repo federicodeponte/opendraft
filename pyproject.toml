@@ -39,7 +39,7 @@ classifiers = [
 requires-python = ">=3.10"
 
 [project.urls]
-Homepage = "https://openpaper.dev"
+Homepage = "https://openpaper.dev?utm_source=pypi&utm_medium=package&utm_campaign=opendraft"
 Repository = "https://github.com/federicodeponte/opendraft"
 Documentation = "https://github.com/federicodeponte/opendraft#readme"
 Issues = "https://github.com/federicodeponte/opendraft/issues"

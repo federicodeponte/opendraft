@@ -709,6 +709,8 @@ def run_interactive():
             pass
 
         print()
+        print(f"  {c.GRAY}Prefer no API keys? Run it free at{c.RESET} {c.CYAN}https://openpaper.dev?utm_source=cli&utm_medium=terminal&utm_campaign=opendraft{c.RESET}")
+        print()
         return 0
 
     except KeyboardInterrupt:
@@ -1296,6 +1298,8 @@ def main():
         print(f"  {c.GREEN}✓{c.RESET} {c.BOLD}Done{c.RESET}")
         print(f"  {c.GRAY}PDF{c.RESET}   {pdf_path}")
         print(f"  {c.GRAY}Word{c.RESET}  {docx_path}")
+        print()
+        print(f"  {c.GRAY}Prefer no API keys? Run it free at{c.RESET} {c.CYAN}https://openpaper.dev?utm_source=cli&utm_medium=terminal&utm_campaign=opendraft{c.RESET}")
         print()
         return 0
 
