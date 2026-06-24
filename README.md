@@ -18,8 +18,9 @@
 </p>
 
 <p align="center">
-  <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft"><strong>🚀 Try the free hosted version on OpenPaper.dev →</strong></a><br>
-  <sub>3 free papers per day · No credit card required</sub>
+  <b>Don't want to manage API keys and infra?</b><br>
+  <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft"><strong>Use the hosted version → OpenPaper.dev</strong></a><br>
+  <sub>3 free papers per day · No API keys · No setup · No credit card required</sub>
 </p>
 
 <p align="center">
@@ -50,6 +51,7 @@
 - [At a Glance](#at-a-glance)
 - [What is OpenDraft?](#what-is-opendraft)
 - [Try it free — no installation](#try-it-free--no-installation)
+- [Self-hosted vs Hosted](#self-hosted-opendraft-vs-hosted-openpaper)
 - [Why OpenDraft Exists](#why-opendraft-exists)
 - [OpenDraft for Open Source Maintainers](#opendraft-for-open-source-maintainers)
 - [What OpenDraft is NOT](#what-opendraft-is-not)
@@ -72,7 +74,7 @@
 
 **OpenDraft is an open-source Python engine that generates source-grounded research drafts using 19 specialized AI agents.** It is designed for academic researchers who need long-form documents (10,000–20,000+ words) with citations verified against real databases.
 
-Unlike general-purpose chatbots such as ChatGPT, OpenDraft does not hallucinate citations. Every source is checked against CrossRef, OpenAlex, Semantic Scholar, and arXiv before being included in the bibliography.
+Unlike general-purpose chatbots such as ChatGPT, OpenDraft does not invent its citations. Every source is verified against CrossRef, OpenAlex, Semantic Scholar, and arXiv before being included in the bibliography, so every citation links to a real paper.
 
 - **OpenDraft is** a command-line tool and Python library for drafting academic papers.
 - **OpenPaper is** the free hosted SaaS version of OpenDraft (3 papers per day, no credit card required).
@@ -106,11 +108,31 @@ Not ready to self-host? **OpenPaper.dev** is the free, hosted version of OpenDra
 - ✅ **3 research papers per day** on the free plan
 - ✅ Searches CrossRef, OpenAlex, Semantic Scholar, and arXiv
 - ✅ **PDF + DOCX export**
-- ✅ No credit card required
-- ✅ Upgrade to Pro ($9/mo) or Max ($25/mo) for more daily credits
+- ✅ No API keys, no setup, no credit card required
+- ✅ Need more? One-time credit packs from **$2.99** — no subscription, credits never expire
 
 <p align="center">
   <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft"><img src="https://img.shields.io/badge/Try%20Free%20on-OpenPaper.dev-6366f1?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Try OpenPaper.dev for free"></a>
+</p>
+
+### Self-hosted (OpenDraft) vs Hosted (OpenPaper)
+
+Same engine, two ways to run it. Self-host for full control, or use the hosted version to skip the setup entirely.
+
+| | **Self-hosted (OpenDraft)** | **Hosted ([OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft))** |
+|---|---|---|
+| **Setup** | Clone, install Python deps, configure `.env` (~10 min) | None — open the site and start writing |
+| **API keys** | You bring your own (Gemini / OpenAI / Anthropic) | Included — nothing to manage |
+| **Infra** | You run it locally or on your own server | Fully hosted in your browser |
+| **Sources** | CrossRef, OpenAlex, Semantic Scholar, arXiv | CrossRef, OpenAlex, Semantic Scholar, arXiv |
+| **Export** | PDF, Word (.docx), LaTeX | PDF, Word (.docx) |
+| **Support** | Community (GitHub issues) | Maintained service, email support |
+| **Price** | Free (MIT) + your own API costs (~$0.35–$3 per draft) | Free tier: 3 papers/day, no card · one-time credit packs from $2.99 (no subscription) |
+| **Best for** | Developers, tinkerers, custom pipelines, full control | Researchers who just want the draft, no setup |
+
+<p align="center">
+  <b>Just want the draft without the setup?</b>
+  <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft"><strong>Start free on OpenPaper.dev →</strong></a>
 </p>
 
 ---
