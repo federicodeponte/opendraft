@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="https://openpaper.dev"><strong>🚀 Try the free hosted version on OpenPaper.dev →</strong></a><br>
+  <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft"><strong>🚀 Try the free hosted version on OpenPaper.dev →</strong></a><br>
   <sub>3 free papers per day · No credit card required</sub>
 </p>
 
@@ -38,7 +38,7 @@
 | **Sources** | CrossRef, OpenAlex, Semantic Scholar (200M+), arXiv |
 | **Languages** | 57+ languages including English, Spanish, German, French, Chinese, Japanese |
 | **Export** | PDF, Microsoft Word (.docx), LaTeX |
-| **Cost** | **Free** (self-hosted, MIT license) or **free tier** at [OpenPaper.dev](https://openpaper.dev) (3 papers/day) |
+| **Cost** | **Free** (self-hosted, MIT license) or **free tier** at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) (3 papers/day) |
 | **Typical output** | 5–80+ pages, 10k–20k+ words, 30–50+ verified citations |
 | **Time to draft** | 10–20 minutes |
 | **API cost per draft** | ~$0.35 (Gemini Flash) to ~$3.00 (Claude Opus) |
@@ -79,7 +79,7 @@ Unlike general-purpose chatbots such as ChatGPT, OpenDraft does not hallucinate 
 - **Best for:** Researchers drafting literature reviews, journal submissions, structured research papers, and thesis first drafts.
 - **Price:** 100% free and open source (MIT license).
 - **Setup time:** 10 minutes for local installation.
-- **SaaS version:** [OpenPaper.dev](https://openpaper.dev) — run it in your browser, 3 free papers/day.
+- **SaaS version:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) — run it in your browser, 3 free papers/day.
 
 ---
 
@@ -110,7 +110,7 @@ Not ready to self-host? **OpenPaper.dev** is the free, hosted version of OpenDra
 - ✅ Upgrade to Pro ($9/mo) or Max ($25/mo) for more daily credits
 
 <p align="center">
-  <a href="https://openpaper.dev"><img src="https://img.shields.io/badge/Try%20Free%20on-OpenPaper.dev-6366f1?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Try OpenPaper.dev for free"></a>
+  <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft"><img src="https://img.shields.io/badge/Try%20Free%20on-OpenPaper.dev-6366f1?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Try OpenPaper.dev for free"></a>
 </p>
 
 ---
@@ -441,9 +441,9 @@ See `engine/README.md` for detailed API documentation.
 
 See what OpenDraft produces:
 
-📄 **[Download Sample PDF](https://openpaper.dev/examples/genai-software-engineering)** — view a live example with verified citations
+📄 **[Download Sample PDF](https://openpaper.dev/examples/genai-software-engineering?utm_source=github&utm_medium=readme&utm_campaign=opendraft)** — view a live example with verified citations
 
-📝 **Try the free hosted version:** [OpenPaper.dev](https://openpaper.dev)
+📝 **Try the free hosted version:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
 
 Generated in ~15 minutes with verified citations from real academic papers.
 
@@ -469,7 +469,7 @@ opendraft/
 ## People Also Ask
 
 ### Is OpenDraft free?
-**Yes.** OpenDraft is 100% free and open source under the MIT license. You can self-host it with your own API keys (a typical draft costs ~$0.35–$3 in API fees). There is also a free hosted version at [OpenPaper.dev](https://openpaper.dev) with 3 papers per day and no credit card required.
+**Yes.** OpenDraft is 100% free and open source under the MIT license. You can self-host it with your own API keys (a typical draft costs ~$0.35–$3 in API fees). There is also a free hosted version at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) with 3 papers per day and no credit card required.
 
 ### Is OpenDraft better than ChatGPT for writing a thesis?
 **Yes, for research drafts.** ChatGPT frequently hallucinates citations and cannot produce documents longer than a few thousand words. OpenDraft generates 20,000+ word research drafts with every citation verified against real academic databases.
@@ -500,7 +500,7 @@ opendraft/
 
 **Yes.** OpenDraft is 100% open source under the MIT license. Self-host with your own API keys. A typical research draft costs ~$0.35-$3 depending on the model.
 
-You can also use the free hosted version at **[OpenPaper.dev](https://openpaper.dev)** — 3 papers per day, no credit card required.
+You can also use the free hosted version at **[OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)** — 3 papers per day, no credit card required.
 
 ### Is this better than ChatGPT for academic writing?
 
@@ -563,8 +563,8 @@ Maintainer workflow docs:
 
 ## Links
 
-- 🌐 **Website:** [OpenPaper.dev](https://openpaper.dev)
-- 🚀 **Free Hosted Version:** [OpenPaper.dev](https://openpaper.dev)
+- 🌐 **Website:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
+- 🚀 **Free Hosted Version:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
 - 💬 **Discussions:** [GitHub Discussions](https://github.com/federicodeponte/opendraft/discussions)
 - 🐛 **Issues:** [Report Bug](https://github.com/federicodeponte/opendraft/issues)
 - 🗒️ **Changelog:** [CHANGELOG.md](CHANGELOG.md)
