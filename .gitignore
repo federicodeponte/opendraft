@@ -56,3 +56,4 @@ section_comparison/
 # Generated JSON artifacts
 quality_test_results.json
 token_usage.json
+*.egg-info/
