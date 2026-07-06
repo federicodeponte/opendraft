@@ -509,6 +509,13 @@ def _is_transient_error(error: Exception) -> bool:
         'connection reset',
         'connection refused',
         'connection closed',
+        'closed connection',          # "peer closed connection ..." (httpx wording)
+        'peer closed',
+        'incomplete chunked read',    # truncated streaming response
+        'chunked read',
+        'connection error',
+        'connection aborted',
+        'remote end closed',
         'server disconnected',
         'broken pipe',
         'network unreachable',
