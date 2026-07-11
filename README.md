@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <b>Free, open-source AI engine that generates source-grounded research drafts with <em>verified</em> citations.</b><br>
+  <b>Free, open-source autonomous research engine: auto research from a prompt to a source-grounded draft with <em>verified</em> citations.</b><br>
   19 specialized agents · CrossRef, OpenAlex, Semantic Scholar, arXiv · PDF/DOCX/LaTeX export
 </p>
 
