@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "opendraft"
-version = "1.7.2"
+version = "1.7.3"
 description = "Generate master-level research papers with real citations in minutes"
 readme = "README.md"
 license = {text = "MIT"}
@@ -95,13 +95,18 @@ opendraft-digest = "digest:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["opendraft*", "utils*", "concurrency*", "phases*"]
+include = ["opendraft*", "utils*", "concurrency*", "phases*", "prompts*"]
 
 [tool.setuptools]
 py-modules = ["config", "draft_generator", "tldr", "digest"]
 include-package-data = true
 
 [tool.setuptools.package-data]
+# Prompt markdown files live in the top-level `prompts/` package and are loaded
+# at runtime by the scribe/scout/compose phases. They MUST ship in the wheel
+# (not just the sdist) or the engine raises FileNotFoundError after install.
+# See issue #26 (regressed in 1.7.2, refixed in 1.7.3).
+"prompts" = ["*.md", "*/*.md", "**/*.md"]
 "opendraft" = ["prompts/*.md", "prompts/**/*.md"]
 "*" = ["*.md"]
 

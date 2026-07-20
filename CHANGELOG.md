@@ -2,6 +2,26 @@
 
 All notable changes are documented in this file.
 
+## 1.7.3 - 2026-07-20
+
+### Fixed
+- P1: `pip install opendraft` shipped no prompt files, so the Scribe phase crashed
+  with `FileNotFoundError` loading `prompts/01_research/scribe.md` right after the
+  Scout/citation phase succeeded (reinstalling did not help). The prompt markdown
+  lived in a top-level `prompts/` directory that was never declared as package data
+  for the wheel built from `engine/pyproject.toml` (only the sdist-only `opendraft`
+  glob was set). This is a regression of issue #26. The `prompts/` directory is now
+  a proper `prompts` package shipped as package data in both the wheel and the sdist,
+  and `load_prompt` resolves prompts via `importlib.resources` with filesystem
+  fallbacks so it works from an installed wheel, a source checkout, or zipimport.
+- Scout "Success Rate" could exceed 100% (e.g. 190%) because it divided total
+  citations by the number of research topics. It now reports the fraction of topics
+  that yielded at least one citation, capped at 100%.
+
+### Guarded
+- Added regression tests that assert the real PyPI publisher (`engine/pyproject.toml`)
+  ships the prompts and that `prompts/__init__.py` exists.
+
 ## 2026-02-16
 
 ### Added

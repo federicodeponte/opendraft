@@ -13,11 +13,59 @@ from pathlib import Path
 # Add repo root to path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT = REPO_ROOT / "pyproject.toml"
+# The wheel published to PyPI is built from engine/pyproject.toml (flat layout,
+# defines the console entry points). Issue #26 regressed in 1.7.2 because only
+# the root pyproject.toml was guarded while the ENGINE one silently dropped the
+# prompts. Guard the real publisher too.
+ENGINE_PYPROJECT = REPO_ROOT / "engine" / "pyproject.toml"
 
 
 def _load_pyproject() -> dict:
     with open(PYPROJECT, "rb") as f:
         return tomllib.load(f)
+
+
+def _load_engine_pyproject() -> dict:
+    with open(ENGINE_PYPROJECT, "rb") as f:
+        return tomllib.load(f)
+
+
+def test_engine_pyproject_ships_prompts_in_wheel():
+    """engine/pyproject.toml (the real PyPI publisher) must ship the prompts.
+
+    Regression guard for issue #26 re-occurring in 1.7.2: the flat `engine`
+    build declared package-data only for the `opendraft` package, but the
+    prompts live in a sibling `prompts/` dir. They were dropped from the wheel
+    and the scribe phase raised FileNotFoundError after `pip install`.
+
+    The fix ships prompts as their own `prompts` package: it must appear in
+    packages.find include AND have a `.md` package-data glob.
+    """
+    cfg = _load_engine_pyproject()
+    setuptools = cfg.get("tool", {}).get("setuptools", {})
+
+    find_include = setuptools.get("packages", {}).get("find", {}).get("include", [])
+    assert any(g.startswith("prompts") for g in find_include), (
+        "engine/pyproject.toml packages.find must include 'prompts*' so the "
+        f"prompts package is discovered and shipped. Got: {find_include}"
+    )
+
+    pkg_data = setuptools.get("package-data", {})
+    prompt_globs = pkg_data.get("prompts", [])
+    assert any(g.endswith(".md") for g in prompt_globs), (
+        "engine/pyproject.toml package-data must include a prompts '*.md' glob so "
+        f"the markdown prompts land in the wheel. Got: {prompt_globs}"
+    )
+
+
+def test_prompts_is_an_importable_package():
+    """The prompts dir must be a real package (have __init__.py) so setuptools
+    collects its data files into the wheel."""
+    init_file = REPO_ROOT / "engine" / "prompts" / "__init__.py"
+    assert init_file.is_file(), (
+        f"Missing {init_file}: without it setuptools will not ship the prompt "
+        "markdown files in the wheel (issue #26)."
+    )
 
 
 def test_pyproject_uses_find_or_lists_all_subpackages():
