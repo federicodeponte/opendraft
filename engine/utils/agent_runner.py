@@ -12,6 +12,7 @@ import time
 import logging
 import os
 import json
+import importlib.resources as _ir
 from pathlib import Path
 from typing import Optional, Callable, Tuple, List, TYPE_CHECKING, Any, Dict
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeoutError
@@ -86,9 +87,45 @@ def setup_model(model_override: Optional[str] = None) -> Any:
     )
 
 
+def _load_prompt_via_resources(prompt_path: str) -> Optional[str]:
+    """Load a prompt from the installed `prompts` package via importlib.resources.
+
+    Robust for wheels / zipimport / relocated installs where a filesystem path
+    relative to a source module does not resolve. Prompt paths are addressed like
+    "prompts/01_research/scribe.md" (or the test form "engine/prompts/..."); we
+    strip everything up to and including the last "prompts/" segment to get the
+    path relative to the `prompts` package root.
+    """
+    normalized = prompt_path.replace("\\", "/")
+    marker = "prompts/"
+    idx = normalized.rfind(marker)
+    rel = normalized[idx + len(marker):] if idx != -1 else normalized
+    if not rel:
+        return None
+    try:
+        root = _ir.files("prompts")
+    except (ModuleNotFoundError, ImportError, TypeError):
+        return None
+    resource = root.joinpath(rel)
+    try:
+        if resource.is_file():
+            return resource.read_text(encoding="utf-8")
+    except (FileNotFoundError, OSError):
+        return None
+    return None
+
+
 def load_prompt(prompt_path: str) -> str:
     """
     Load agent prompt from markdown file.
+
+    Resolution order (first hit wins), so the engine works both from a source
+    checkout AND from a pip-installed wheel:
+      1. Absolute path as given.
+      2. Filesystem paths relative to the engine root / project root / cwd
+         (dev tree + flat installs).
+      3. The shipped `prompts` package via importlib.resources
+         (installed wheels, zipimport, relocated installs).
 
     Args:
         prompt_path: Path to prompt file (relative to project root or absolute)
@@ -97,20 +134,36 @@ def load_prompt(prompt_path: str) -> str:
         str: Content of the prompt file
 
     Raises:
-        FileNotFoundError: If prompt file doesn't exist
+        FileNotFoundError: If prompt file cannot be found in any location.
     """
     config = get_config()
     path = Path(prompt_path)
+    tried: List[str] = []
 
-    # If relative path, try relative to project root
-    if not path.is_absolute():
-        path = config.paths.project_root / path
+    if path.is_absolute():
+        if path.exists():
+            return path.read_text(encoding="utf-8")
+        tried.append(str(path))
+    else:
+        candidates = [
+            config.paths.project_root / path,                 # dir containing config.py
+            Path(__file__).resolve().parent.parent / path,    # engine/ root
+            Path.cwd() / path,                                 # current working dir
+        ]
+        for cand in candidates:
+            if cand.exists():
+                return cand.read_text(encoding="utf-8")
+            tried.append(str(cand))
 
-    if not path.exists():
-        raise FileNotFoundError(f"Prompt file not found: {path}")
+    # Fall back to the packaged `prompts` resources (installed wheel case).
+    via_pkg = _load_prompt_via_resources(prompt_path)
+    if via_pkg is not None:
+        return via_pkg
+    tried.append(f"importlib.resources('prompts')::{prompt_path}")
 
-    with open(path, 'r', encoding='utf-8') as f:
-        return f.read()
+    raise FileNotFoundError(
+        f"Prompt file not found: {prompt_path}. Tried: {'; '.join(tried)}"
+    )
 
 
 def run_agent(
@@ -1063,7 +1116,13 @@ def research_citations_via_api(
 
     # Calculate success metrics
     citation_count = len(citations)
-    success_rate = (citation_count / len(research_topics) * 100) if research_topics else 0
+    # Success rate = fraction of research topics that yielded at least one
+    # citation, NOT total citations / topics (a single topic can produce
+    # multiple citations, which previously pushed the "rate" above 100%,
+    # e.g. 19 citations / 10 topics -> 190%).
+    total_topics = len(research_topics) if research_topics else 0
+    successful_topics = max(total_topics - len(failed_topics), 0)
+    success_rate = (successful_topics / total_topics * 100) if total_topics else 0
 
     if verbose:
         safe_print("\n" + "=" * 80)
