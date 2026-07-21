@@ -40,8 +40,11 @@ jobs:
           import glob, zipfile
           whl = glob.glob("dist/*.whl")[0]
           names = zipfile.ZipFile(whl).namelist()
-          prompts = [n for n in names if n.startswith("engine/prompts/") and n.endswith(".md")]
+          # Layout-agnostic: prompts ship under a top-level prompts/ dir in the
+          # current flat layout; match any prompts/*.md regardless of package root.
+          prompts = [n for n in names if "prompts/" in n and n.endswith(".md")]
           assert len(prompts) >= 20, f"expected >=20 prompt files in wheel, got {len(prompts)}: {prompts}"
+          assert any(n.endswith("scribe.md") for n in prompts), "scribe.md missing from wheel"
           print(f"OK: {len(prompts)} prompt files bundled in {whl}")
           PY
 
