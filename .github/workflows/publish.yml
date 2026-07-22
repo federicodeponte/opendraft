@@ -31,21 +31,30 @@ jobs:
       - name: Build sdist and wheel
         run: |
           python -m pip install --upgrade build twine
-          python -m build
+          # The distributable project lives in engine/ (flat layout: opendraft,
+          # utils, phases, prompts, ...). Building the repo ROOT instead produces
+          # an engine/-nested wheel where `import opendraft` fails (the 1.7.2
+          # breakage). Always build from engine/ into the top-level dist/.
+          rm -rf dist
+          python -m build --outdir dist engine
 
-      - name: Verify prompts are bundled (guards the 1.7.3 packaging bug)
+      - name: Verify wheel is the correct flat layout (guards the 1.7.2/1.7.3 packaging bug)
         run: |
           twine check dist/*
           python - <<'PY'
           import glob, zipfile
           whl = glob.glob("dist/*.whl")[0]
           names = zipfile.ZipFile(whl).namelist()
-          # Layout-agnostic: prompts ship under a top-level prompts/ dir in the
-          # current flat layout; match any prompts/*.md regardless of package root.
-          prompts = [n for n in names if "prompts/" in n and n.endswith(".md")]
-          assert len(prompts) >= 20, f"expected >=20 prompt files in wheel, got {len(prompts)}: {prompts}"
+          tops = {n.split("/")[0] for n in names}
+          # Must be the flat layout, NOT engine/-nested (which is import-broken).
+          assert "opendraft" in tops, f"opendraft package missing at top level: {sorted(tops)}"
+          assert "prompts" in tops, f"prompts package missing at top level: {sorted(tops)}"
+          assert "engine" not in tops, f"nested/broken layout detected (import opendraft would fail): {sorted(tops)}"
+          assert "opendraft/cli.py" in names, "opendraft/cli.py missing from wheel"
+          prompts = [n for n in names if n.startswith("prompts/") and n.endswith(".md")]
+          assert len(prompts) >= 20, f"expected >=20 top-level prompt files, got {len(prompts)}: {prompts}"
           assert any(n.endswith("scribe.md") for n in prompts), "scribe.md missing from wheel"
-          print(f"OK: {len(prompts)} prompt files bundled in {whl}")
+          print(f"OK: flat wheel {whl} with {len(prompts)} prompt files")
           PY
 
       - name: Publish to PyPI

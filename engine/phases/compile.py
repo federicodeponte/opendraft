@@ -17,6 +17,31 @@ from .context import DraftContext
 logger = logging.getLogger(__name__)
 
 
+def _export_latex_safe(md_path: Path, tex_path: Path, verbose: bool = False):
+    """
+    Best-effort LaTeX (.tex) export next to the PDF/DOCX outputs.
+
+    Never raises: a missing pandoc or a conversion error logs a warning and
+    returns None so the run always completes with its PDF/DOCX. Returns the
+    .tex Path on success (for ZIP bundling), else None.
+    """
+    try:
+        from utils.export_professional import export_latex
+        if verbose:
+            print("📐 Exporting LaTeX (.tex)...")
+        ok = export_latex(md_file=md_path, output_tex=tex_path)
+        if ok and tex_path.exists():
+            return tex_path
+        if verbose:
+            print("   ⚠️ LaTeX export skipped (pandoc unavailable or failed)")
+        logger.warning("LaTeX (.tex) export skipped or failed (non-critical)")
+    except Exception as tex_error:  # pragma: no cover - defensive
+        logger.warning(f"LaTeX (.tex) export raised (non-critical): {tex_error}")
+        if verbose:
+            print("   ⚠️ LaTeX export skipped (error)")
+    return None
+
+
 def run_expose_export(ctx: DraftContext) -> Tuple[Path, Path]:
     """
     Handle expose mode: generate research overview + outline only.
@@ -199,6 +224,10 @@ This research expose serves as a starting point for a comprehensive {ctx.academi
 
     if not docx_success or not docx_path.exists():
         raise RuntimeError(f"DOCX export failed for expose: {docx_path}")
+
+    # LaTeX (.tex) export — best-effort compilable source (non-critical for expose).
+    tex_path = ctx.folders['exports'] / f"{topic_slug}_expose.tex"
+    _export_latex_safe(expose_md_path, tex_path, verbose=ctx.verbose)
 
     if ctx.tracker:
         ctx.tracker.log_activity("🎉 Research Expose complete!", event_type="milestone", phase="completed")
@@ -476,6 +505,13 @@ generated_by: "OpenDraft AI - https://github.com/federicodeponte/opendraft"
     if ctx.tracker:
         ctx.tracker.log_activity("\u2705 Word document ready", event_type="found", phase="exporting")
 
+    # LaTeX (.tex) export \u2014 compilable source with the same formatted bibliography.
+    # Best-effort: never crashes the run if pandoc is unavailable.
+    tex_path = ctx.folders['exports'] / f"{base_filename}.tex"
+    tex_path = _export_latex_safe(final_md_path, tex_path, verbose=ctx.verbose)
+    if tex_path and ctx.tracker:
+        ctx.tracker.log_activity("\u2705 LaTeX source ready", event_type="found", phase="exporting")
+
     # ZIP bundle
     zip_path = ctx.folders['exports'] / f"{base_filename}.zip"
     try:
@@ -483,6 +519,8 @@ generated_by: "OpenDraft AI - https://github.com/federicodeponte/opendraft"
             zf.write(pdf_path, pdf_path.name)
             zf.write(docx_path, docx_path.name)
             zf.write(final_md_path, final_md_path.name)
+            if tex_path and tex_path.exists():
+                zf.write(tex_path, tex_path.name)
         if ctx.tracker:
             ctx.tracker.log_activity("📦 ZIP bundle created", event_type="found", phase="exporting")
     except Exception as zip_error:

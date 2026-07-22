@@ -2,6 +2,27 @@
 
 All notable changes are documented in this file.
 
+## 1.7.4 - 2026-07-22
+
+### Added
+- LaTeX (`.tex`) output alongside the existing PDF, DOCX, and Markdown exports.
+  Every generated paper (and research exposé) now also produces a standalone,
+  compilable `<name>.tex` next to `<name>.pdf`/`<name>.docx`, bundled into the
+  ZIP. The `.tex` reuses the same Pandoc pipeline, preprocessing, and preamble as
+  the PDF path, so it carries the same style-formatted References/bibliography
+  (APA/IEEE/Chicago/MLA) as the PDF and compiles with XeLaTeX. It ships with a
+  `% !TeX program = xelatex` header. If Pandoc is not installed the `.tex` step
+  logs a warning and is skipped; the run still completes with its PDF/DOCX
+  (graceful degradation, never crashes the run).
+
+### Fixed
+- Title-page metadata (title, author, institution, department, advisor, ...) was
+  interpolated into the LaTeX preamble and Pandoc `--variable` values without
+  escaping, so a value containing `&`, `%`, `_`, `#`, `$`, `{`, or `}` produced a
+  document that Pandoc accepted but XeLaTeX rejected ("File ended while scanning
+  use of `\@argdef`"). Special characters are now escaped for both the PDF and the
+  new `.tex` output.
+
 ## 1.7.3 - 2026-07-20
 
 ### Fixed
