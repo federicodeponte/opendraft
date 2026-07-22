@@ -15,6 +15,35 @@ from typing import Optional, Dict, Any
 from .base import PDFEngine, PDFGenerationOptions, EngineResult
 
 
+# LaTeX special characters that must be escaped in plain-text values injected
+# directly into the preamble (title, author, institution, ...). Without this a
+# title like "Cost & Benefit_Analysis of 50%" makes the custom \maketitle
+# definition unparseable and XeLaTeX aborts with "File ended while scanning use
+# of \@argdef", even though Pandoc reported success. Applied to BOTH the PDF and
+# the .tex paths (they share _create_latex_preamble).
+def _latex_escape_text(value: Any) -> str:
+    """Escape LaTeX special characters in a plain-text metadata value."""
+    if value is None:
+        return ""
+    s = str(value)
+    # Backslash first, then the rest, so we don't double-escape our own escapes.
+    s = s.replace("\\", r"\textbackslash{}")
+    replacements = {
+        "&": r"\&",
+        "%": r"\%",
+        "$": r"\$",
+        "#": r"\#",
+        "_": r"\_",
+        "{": r"\{",
+        "}": r"\}",
+        "~": r"\textasciitilde{}",
+        "^": r"\textasciicircum{}",
+    }
+    for char, escaped in replacements.items():
+        s = s.replace(char, escaped)
+    return s
+
+
 class PandocLatexEngine(PDFEngine):
     """
     Pandoc/LaTeX-based PDF generation engine.
@@ -198,6 +227,234 @@ class PandocLatexEngine(PDFEngine):
                 error_message=f"Unexpected error: {str(e)}"
             )
 
+    def latex_is_available(self) -> bool:
+        """
+        Check if standalone LaTeX (.tex) generation is possible.
+
+        Unlike PDF generation, emitting a .tex source only needs Pandoc; a LaTeX
+        compiler (XeLaTeX) is NOT required to WRITE the .tex file. The generated
+        document still targets XeLaTeX for compilation (fontspec preamble).
+        """
+        return shutil.which('pandoc') is not None
+
+    def generate_latex(
+        self,
+        md_file: Path,
+        output_tex: Path,
+        options: PDFGenerationOptions
+    ) -> EngineResult:
+        """
+        Generate a standalone, compilable LaTeX (.tex) source from Markdown.
+
+        Reuses the EXACT same preprocessing and preamble as the proven PDF path
+        (generate()), but emits a standalone LaTeX document instead of running
+        XeLaTeX to a PDF. The resulting .tex is a full document
+        (\\documentclass ... \\begin{document} ... \\end{document}) that compiles
+        with XeLaTeX (the preamble uses fontspec) and carries the same
+        style-formatted References section as the PDF, i.e. an embedded,
+        properly formatted bibliography.
+
+        Args:
+            md_file: Input markdown file
+            output_tex: Output .tex path
+            options: Generation options (shared with the PDF path)
+
+        Returns:
+            EngineResult with success/failure details
+        """
+        # Validate inputs (mirror of validate_inputs, but for a .tex target)
+        if not md_file.exists():
+            return EngineResult(
+                success=False,
+                engine_name=self.get_name(),
+                error_message=f"Input file not found: {md_file}"
+            )
+        if md_file.suffix.lower() not in ['.md', '.markdown']:
+            return EngineResult(
+                success=False,
+                engine_name=self.get_name(),
+                error_message=f"Input file must be markdown (.md), got: {md_file.suffix}"
+            )
+        if output_tex.suffix.lower() != '.tex':
+            return EngineResult(
+                success=False,
+                engine_name=self.get_name(),
+                error_message=f"Output file must have .tex extension, got: {output_tex.suffix}"
+            )
+        output_tex.parent.mkdir(parents=True, exist_ok=True)
+
+        temp_md = None
+        preamble_path = None
+        try:
+            with open(md_file, 'r', encoding='utf-8') as f:
+                md_content = f.read()
+
+            # Identical preprocessing chain to the PDF path (generate()).
+            original_md_content = md_content
+            md_content = self._normalize_yaml_for_pandoc(md_content)
+            md_content = self._unwrap_markdown_fence(md_content)
+            md_content = self._remove_title_heading(md_content, original_md_content)
+            md_content = self._strip_code_blocks(md_content)
+            md_content = self._normalize_bullet_lists(md_content)
+            md_content = self._escape_latex_special_chars(md_content)
+
+            import tempfile
+            import os
+            temp_fd, temp_path = tempfile.mkstemp(suffix='.md', text=True)
+            temp_md = Path(temp_path)
+            try:
+                with open(temp_md, 'w', encoding='utf-8') as f:
+                    f.write(md_content)
+            finally:
+                os.close(temp_fd)
+
+            # Same preamble the PDF uses (title page, TOC, fonts, hyperref, tables).
+            latex_preamble = self._create_latex_preamble(options, original_md_content)
+            preamble_path = (output_tex.parent / f"{output_tex.stem}_preamble.tex").resolve()
+            with open(preamble_path, 'w', encoding='utf-8') as f:
+                f.write(latex_preamble)
+
+            result = self._run_pandoc_latex(temp_md, output_tex, preamble_path, options)
+            return result
+
+        except Exception as e:
+            return EngineResult(
+                success=False,
+                engine_name=self.get_name(),
+                error_message=f"Unexpected error generating LaTeX: {str(e)}"
+            )
+        finally:
+            if preamble_path and preamble_path.exists():
+                try:
+                    preamble_path.unlink()
+                except Exception:
+                    pass
+            if temp_md and temp_md.exists():
+                try:
+                    temp_md.unlink()
+                except Exception:
+                    pass
+
+    def _run_pandoc_latex(
+        self,
+        md_file: Path,
+        output_tex: Path,
+        preamble_path: Path,
+        options: PDFGenerationOptions
+    ) -> EngineResult:
+        """
+        Run Pandoc to convert markdown to a standalone .tex source.
+
+        Mirrors _run_pandoc but targets `-t latex --standalone` (no --pdf-engine),
+        so the output is editable, compilable LaTeX rather than a PDF.
+        """
+        try:
+            margin = options.margins
+
+            cmd = [
+                'pandoc',
+                str(md_file.resolve()),
+                '-o', str(output_tex.resolve()),
+                '--standalone',
+                '--to', 'latex',
+                '--include-in-header', str(preamble_path.resolve()),
+                '--from', 'markdown+autolink_bare_uris+raw_tex',
+                '--variable', f'geometry:margin={margin}',
+                '--variable', f'fontsize={options.font_size}',
+                '--variable', 'papersize:letter',
+                '--variable', 'documentclass:article',
+            ]
+
+            # Pandoc --variable values are substituted literally (NOT LaTeX-escaped),
+            # and they land in \title{...}/\author{...}, so escape special chars here
+            # too or a title like "Cost & Benefit" breaks the compile.
+            if options.title:
+                cmd.extend(['--variable', f'title={_latex_escape_text(options.title)}'])
+            if options.author:
+                cmd.extend(['--variable', f'author={_latex_escape_text(options.author)}'])
+            if options.date:
+                cmd.extend(['--variable', f'date={_latex_escape_text(options.date)}'])
+            if options.institution:
+                cmd.extend(['--variable', f'institution={_latex_escape_text(options.institution)}'])
+            if options.department:
+                cmd.extend(['--variable', f'department={_latex_escape_text(options.department)}'])
+            if options.course:
+                cmd.extend(['--variable', f'course={_latex_escape_text(options.course)}'])
+            if options.instructor:
+                cmd.extend(['--variable', f'instructor={_latex_escape_text(options.instructor)}'])
+
+            if options.enable_toc:
+                cmd.append('--toc')
+                cmd.extend(['--variable', f'toc-depth={options.toc_depth}'])
+                cmd.extend(['--variable', 'toc-title=Table of Contents'])
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                cwd=output_tex.parent
+            )
+
+            if result.returncode != 0:
+                error_lines = result.stderr.split('\n')
+                latex_errors = [line for line in error_lines if line.startswith('!')]
+                if latex_errors:
+                    error_msg = '\n'.join(latex_errors[:3])
+                else:
+                    error_msg = result.stderr[-500:] if len(result.stderr) > 500 else result.stderr
+                return EngineResult(
+                    success=False,
+                    engine_name=self.get_name(),
+                    error_message=f"Pandoc LaTeX conversion failed:\n{error_msg}"
+                )
+
+            if not output_tex.exists():
+                return EngineResult(
+                    success=False,
+                    engine_name=self.get_name(),
+                    error_message="Pandoc did not generate .tex file"
+                )
+
+            # Prepend a TeX-editor magic comment so the .tex is compiled with the
+            # right engine. The preamble uses fontspec, so it requires XeLaTeX (or
+            # LuaLaTeX); pdflatex will fail. This makes the requirement explicit.
+            try:
+                original = output_tex.read_text(encoding='utf-8')
+                header = (
+                    "% !TeX program = xelatex\n"
+                    "% Generated by OpenDraft. Compile with XeLaTeX or LuaLaTeX "
+                    "(the preamble uses fontspec); pdflatex is not supported.\n"
+                )
+                if not original.lstrip().startswith('% !TeX'):
+                    output_tex.write_text(header + original, encoding='utf-8')
+            except OSError:
+                pass  # Non-fatal: the .tex is already valid without the comment.
+
+            warnings = []
+            if 'Warning' in result.stdout or 'Warning' in result.stderr:
+                warnings.append("Pandoc generated warnings (non-critical)")
+
+            return EngineResult(
+                success=True,
+                engine_name=self.get_name(),
+                output_path=output_tex,
+                warnings=warnings
+            )
+
+        except subprocess.TimeoutExpired:
+            return EngineResult(
+                success=False,
+                engine_name=self.get_name(),
+                error_message="Pandoc LaTeX conversion timed out (>2 minutes)"
+            )
+        except Exception as e:
+            return EngineResult(
+                success=False,
+                engine_name=self.get_name(),
+                error_message=f"Pandoc execution failed: {str(e)}"
+            )
+
     def _create_latex_preamble(self, options: PDFGenerationOptions, md_content: str = "") -> str:
         """
         Create LaTeX preamble for header customization.
@@ -306,16 +563,16 @@ class PandocLatexEngine(PDFEngine):
 '''
             # Add institution if provided
             if options.institution:
-                preamble += f'''    {{\\normalsize\\scshape {options.institution}\\par}}
+                preamble += f'''    {{\\normalsize\\scshape {_latex_escape_text(options.institution)}\\par}}
 '''
             # Add faculty if provided
             if hasattr(options, 'faculty') and options.faculty:
                 preamble += f'''    \\vspace{{0.08cm}}
-    {{\\small {options.faculty}\\par}}
+    {{\\small {_latex_escape_text(options.faculty)}\\par}}
 '''
             if options.department:
                 preamble += f'''    \\vspace{{0.08cm}}
-    {{\\small\\itshape {options.department}\\par}}
+    {{\\small\\itshape {_latex_escape_text(options.department)}\\par}}
 '''
 
             preamble += r'''
@@ -323,17 +580,17 @@ class PandocLatexEngine(PDFEngine):
     % Title Block - center
 '''
             if options.title:
-                preamble += f'''    {{\\Large\\bfseries {options.title}\\par}}
+                preamble += f'''    {{\\Large\\bfseries {_latex_escape_text(options.title)}\\par}}
 '''
             if options.subtitle:
                 preamble += f'''    \\vspace{{0.25cm}}
-    {{\\normalsize\\itshape {options.subtitle}\\par}}
+    {{\\normalsize\\itshape {_latex_escape_text(options.subtitle)}\\par}}
 '''
 
             # Add project type descriptor
             if options.project_type:
                 preamble += f'''    \\vspace{{0.5cm}}
-    {{\\small\\scshape {options.project_type}\\par}}
+    {{\\small\\scshape {_latex_escape_text(options.project_type)}\\par}}
 '''
 
             # Add degree
@@ -341,7 +598,7 @@ class PandocLatexEngine(PDFEngine):
                 preamble += f'''    \\vspace{{0.2cm}}
     {{\\small submitted in partial fulfillment of the requirements for the degree of\\par}}
     \\vspace{{0.1cm}}
-    {{\\normalsize\\bfseries {options.course}\\par}}
+    {{\\normalsize\\bfseries {_latex_escape_text(options.course)}\\par}}
 '''
 
             preamble += r'''
@@ -351,16 +608,16 @@ class PandocLatexEngine(PDFEngine):
     \vspace{0.15cm}
 '''
             if options.author:
-                preamble += f'''    {{\\normalsize\\bfseries {options.author}\\par}}
+                preamble += f'''    {{\\normalsize\\bfseries {_latex_escape_text(options.author)}\\par}}
 '''
             # Student ID or Matriculation number
             if options.student_id:
                 preamble += f'''    \\vspace{{0.08cm}}
-    {{\\small Matriculation No.: {options.student_id}\\par}}
+    {{\\small Matriculation No.: {_latex_escape_text(options.student_id)}\\par}}
 '''
             if hasattr(options, 'matriculation_number') and options.matriculation_number:
                 preamble += f'''    \\vspace{{0.08cm}}
-    {{\\small Matriculation No.: {options.matriculation_number}\\par}}
+    {{\\small Matriculation No.: {_latex_escape_text(options.matriculation_number)}\\par}}
 '''
 
             preamble += r'''
@@ -369,18 +626,18 @@ class PandocLatexEngine(PDFEngine):
 '''
             # Add advisor/supervisor
             if options.instructor:
-                preamble += f'''    {{\\small\\bfseries First Supervisor:}} {{\\small {options.instructor}\\par}}
+                preamble += f'''    {{\\small\\bfseries First Supervisor:}} {{\\small {_latex_escape_text(options.instructor)}\\par}}
 '''
             # Add second examiner if provided
             if hasattr(options, 'second_examiner') and options.second_examiner:
                 preamble += f'''    \\vspace{{0.08cm}}
-    {{\\small\\bfseries Second Examiner:}} {{\\small {options.second_examiner}\\par}}
+    {{\\small\\bfseries Second Examiner:}} {{\\small {_latex_escape_text(options.second_examiner)}\\par}}
 '''
 
             # Add system credit
             if options.system_credit:
                 preamble += f'''    \\vspace{{0.2cm}}
-    {{\\footnotesize\\itshape {options.system_credit}\\par}}
+    {{\\footnotesize\\itshape {_latex_escape_text(options.system_credit)}\\par}}
 '''
 
             preamble += r'''
@@ -389,7 +646,7 @@ class PandocLatexEngine(PDFEngine):
 '''
             # Add location if provided
             if hasattr(options, 'location') and options.location:
-                preamble += f'''    {{\\small {options.location}\\par}}
+                preamble += f'''    {{\\small {_latex_escape_text(options.location)}\\par}}
 '''
             # Add submission date, regular date, or default to today
             if hasattr(options, 'submission_date') and options.submission_date:
@@ -399,7 +656,7 @@ class PandocLatexEngine(PDFEngine):
             else:
                 display_date = datetime.now().strftime('%B %d, %Y')
             preamble += f'''    \\vspace{{0.08cm}}
-    {{\\small {display_date}\\par}}
+    {{\\small {_latex_escape_text(display_date)}\\par}}
 '''
 
             preamble += r'''
@@ -472,23 +729,26 @@ class PandocLatexEngine(PDFEngine):
                 '--variable', 'documentclass:article',
             ]
 
-            # Add title page metadata if provided
+            # Add title page metadata if provided.
+            # Pandoc --variable values are substituted literally (NOT LaTeX-escaped)
+            # into \title{...}/\author{...}, so escape special chars (&, %, _, #, ...)
+            # or a title like "Cost & Benefit" aborts the XeLaTeX compile.
             if options.title:
-                cmd.extend(['--variable', f'title={options.title}'])
+                cmd.extend(['--variable', f'title={_latex_escape_text(options.title)}'])
             if options.author:
-                cmd.extend(['--variable', f'author={options.author}'])
+                cmd.extend(['--variable', f'author={_latex_escape_text(options.author)}'])
             if options.date:
-                cmd.extend(['--variable', f'date={options.date}'])
+                cmd.extend(['--variable', f'date={_latex_escape_text(options.date)}'])
 
             # Add institutional metadata for professional cover page
             if options.institution:
-                cmd.extend(['--variable', f'institution={options.institution}'])
+                cmd.extend(['--variable', f'institution={_latex_escape_text(options.institution)}'])
             if options.department:
-                cmd.extend(['--variable', f'department={options.department}'])
+                cmd.extend(['--variable', f'department={_latex_escape_text(options.department)}'])
             if options.course:
-                cmd.extend(['--variable', f'course={options.course}'])
+                cmd.extend(['--variable', f'course={_latex_escape_text(options.course)}'])
             if options.instructor:
-                cmd.extend(['--variable', f'instructor={options.instructor}'])
+                cmd.extend(['--variable', f'instructor={_latex_escape_text(options.instructor)}'])
 
             # Add table of contents if enabled
             if options.enable_toc:

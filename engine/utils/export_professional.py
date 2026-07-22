@@ -179,6 +179,78 @@ def export_pdf(
         return False
 
 
+def export_latex(
+    md_file: Path,
+    output_tex: Path,
+    options: Optional[PDFGenerationOptions] = None
+) -> bool:
+    """
+    Export markdown to a standalone, compilable LaTeX (.tex) source.
+
+    Reuses the same Pandoc pipeline, preprocessing, and preamble as the PDF path
+    (so the .tex carries the same style-formatted References/bibliography), but
+    emits editable LaTeX instead of a rendered PDF. Only Pandoc is required to
+    write the .tex (XeLaTeX is needed to later compile it to PDF).
+
+    Degrades gracefully: if Pandoc is not installed, logs a warning and returns
+    False instead of raising, so a run never crashes over a missing .tex.
+
+    Args:
+        md_file: Path to input markdown file
+        output_tex: Path for output .tex file
+        options: Generation options (uses academic defaults + YAML metadata if None)
+
+    Returns:
+        bool: True if the .tex was generated, False otherwise (non-fatal)
+    """
+    from utils.pdf_engines.pandoc_engine import PandocLatexEngine
+
+    md_file = Path(md_file)
+    output_tex = Path(output_tex)
+
+    engine = PandocLatexEngine()
+    if not engine.latex_is_available():
+        logger.warning(
+            "LaTeX (.tex) export skipped: pandoc not found on PATH. "
+            "Install pandoc to enable LaTeX output."
+        )
+        return False
+
+    metadata = extract_metadata_from_yaml(md_file)
+
+    if options is None:
+        options = PDFGenerationOptions(
+            title=metadata.get('title'),
+            subtitle=metadata.get('subtitle'),
+            author=metadata.get('author'),
+            date=metadata.get('date'),
+            institution=metadata.get('institution'),
+            department=metadata.get('department'),
+            course=metadata.get('degree'),
+            instructor=metadata.get('advisor'),
+            student_id=metadata.get('student_id'),
+            project_type=metadata.get('project_type'),
+            system_credit=metadata.get('system_credit')
+        )
+
+    logger.info("=" * 70)
+    logger.info(f"Generating LaTeX: {output_tex.name}")
+    logger.info(f"Input: {md_file}")
+    logger.info("=" * 70)
+
+    result = engine.generate_latex(md_file, output_tex, options)
+
+    if result.success:
+        logger.info(f"LaTeX created successfully: {result.output_path}")
+        if result.warnings:
+            for warning in result.warnings:
+                logger.warning(f"  - {warning}")
+        return True
+
+    logger.warning(f"LaTeX export failed: {result.error_message}")
+    return False
+
+
 def _normalize_yaml_for_pandoc(md_content: str) -> str:
     """
     Normalize YAML frontmatter field names to English for Pandoc compatibility.
