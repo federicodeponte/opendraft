@@ -429,6 +429,65 @@ class TestUnverifiedSourceMarking:
 
 
 # =========================================================================
+# 3b. The on-disk cache must not become a bypass
+# =========================================================================
+
+class TestCachePersistence:
+    """
+    research_citation() caches results to disk between runs. Two risks:
+    a verdict must survive the round trip, and a cache file written before
+    verification existed must not smuggle an unconfirmed citation through.
+    """
+
+    def _researcher(self, held, **kwargs):
+        from utils.api_citations.multi_source import MultiSourceConfirmer
+
+        researcher = make_researcher(**kwargs)
+        researcher.confirmer = MultiSourceConfirmer(
+            crossref_client=FakeDOIClient(held),
+            openalex_client=FakeDOIClient(held),
+            semantic_scholar_client=FakeDOIClient({}),
+        )
+        return researcher
+
+    def test_verdict_survives_the_cache_round_trip(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        held = {"10.1/x": {"title": "A Real Paper"}}
+        # A plausible surname: single-letter authors are rejected by
+        # validate_author_name() long before verification is reached.
+        metadata = {"doi": "10.1/x", "title": "A Real Paper",
+                    "authors": ["Kucsko"], "year": 2020}
+
+        writer = self._researcher(held)
+        writer.cache["topic-a"] = writer._verify_results([(metadata, "Crossref")])
+        writer._save_cache()
+
+        reader = self._researcher(held)
+        citations = reader.research_citation("topic-a")
+
+        assert len(citations) == 1
+        assert citations[0].verification_status == VERIFICATION_MULTI_SOURCE
+        assert citations[0].verification_sources == ["Crossref", "OpenAlex"]
+
+    def test_pre_existing_cache_entry_cannot_bypass_confirmation(self, tmp_path, monkeypatch):
+        """A cache file written before this feature existed carries no verdict."""
+        monkeypatch.chdir(tmp_path)
+        stale = {
+            "topic-b": [[
+                {"doi": "10.1/single", "title": "Only One Database Has This",
+                 "authors": ["Kucsko"], "year": 2019},
+                "Crossref",
+            ]]
+        }
+        (tmp_path / ".citation_cache_orchestrator.json").write_text(json.dumps(stale))
+
+        # No database holds the DOI, so nothing can confirm it.
+        researcher = self._researcher({}, require_multi_source=True)
+
+        assert researcher.research_citation("topic-b") == []
+
+
+# =========================================================================
 # 4. Claim-level verifier verdicts
 # =========================================================================
 
