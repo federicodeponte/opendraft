@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
 """
-ABOUTME: Citation management phase — deterministic pipeline (no LLM)
-ABOUTME: Deduplication, scraping, filtering, and summary generation
+ABOUTME: Citation management phase — dedupe, scrape, quality filter, claim-level verification
+ABOUTME: Existence of a source is settled upstream; this phase decides what reaches the writers
+
+Three separate checks apply to a citation, and they answer different questions:
+
+1. Does the work exist?  Settled upstream in CitationResearcher, by
+   multi-source DOI confirmation across Crossref / OpenAlex / Semantic Scholar.
+2. Is the record well formed?  CitationQualityFilter (broken URLs, junk
+   metadata, no topical keyword overlap).
+3. Is the source actually about what it is cited for?  CitationClaimVerifier,
+   run below. A real, well-formed, multi-source-confirmed paper can still be
+   irrelevant to the paper it was gathered for.
 """
 
+import json
 import logging
 
 from .context import DraftContext
@@ -64,12 +75,24 @@ def run_citation_management(ctx: DraftContext) -> None:
     citation_db_path = ctx.folders['research'] / "bibliography.json"
     save_citation_database(ctx.citation_database, citation_db_path)
 
-    # Quality filtering (auto-fix mode for automated runs)
-    filter_obj = CitationQualityFilter(strict_mode=False)
+    # Quality filtering.
+    #
+    # strict_mode was False here, which is an override: the class defaults to
+    # True. Lenient mode drops only invalid_url and invalid_metadata and lets
+    # every other critical validator issue through into the finished paper.
+    # There is no documented reason for the pipeline to be more permissive than
+    # the library default, so it now uses the strict default.
+    filter_obj = CitationQualityFilter(strict_mode=True)
     filter_obj.filter_database(citation_db_path, citation_db_path, topic=ctx.topic)
 
     # Reload filtered database
     ctx.citation_database = load_citation_database(citation_db_path)
+
+    # Claim-level verification: is each surviving source actually about the
+    # topic it was gathered for? Runs after quality filtering so no LLM call is
+    # spent judging a citation that was about to be discarded anyway, and after
+    # metadata scraping so abstracts are populated for the judge to read.
+    _run_claim_verification(ctx, citation_db_path)
 
     if ctx.verbose:
         print(f"\u2705 Citations: {len(ctx.citation_database.citations)} unique")
@@ -93,6 +116,142 @@ def run_citation_management(ctx: DraftContext) -> None:
     ctx.citation_summary = _build_citation_summary(ctx.citation_database)
 
     rate_limit_delay()
+
+
+def _run_claim_verification(ctx: DraftContext, citation_db_path) -> None:
+    """
+    Judge every surviving citation against the paper topic, then act on it.
+
+    Why the topic and not individual sentences: this phase runs before any
+    draft exists, so the topic is the only claim available. Sentence-level
+    verification needs draft text and lives in
+    utils.citation_claim_verifier.run_citation_claim_verification.
+
+    Writes two artifacts into the research folder regardless of outcome:
+      citation_claim_verification.md    human-readable report
+      citation_claim_verification.json  per-citation verdicts
+
+    A citation judged IRRELEVANT is removed only when the judge's confidence
+    clears claim_verification_min_confidence, and never if removing would empty
+    the database. Both guards exist because the judge is a language model and a
+    wrong removal silently shrinks the bibliography.
+
+    Any failure here is logged and swallowed: a judge outage must not destroy a
+    run that already has verified citations.
+    """
+    from utils.citation_database import save_citation_database
+    from utils.citation_claim_verifier import (
+        CitationClaimVerifier,
+        VERDICT_IRRELEVANT,
+        summarize_verdicts,
+    )
+
+    validation_cfg = getattr(ctx.config, 'validation', None) if ctx.config else None
+
+    if validation_cfg is not None and not validation_cfg.enable_claim_verification:
+        logger.info("Claim-level citation verification disabled (enable_claim_verification=False) — skipping")
+        return
+
+    citations = ctx.citation_database.citations if ctx.citation_database else []
+    if not citations:
+        logger.info("Claim-level citation verification: no citations to check")
+        return
+
+    if ctx.model is None:
+        # Say which check did not run. Silence here would look identical to a
+        # clean pass.
+        logger.warning(
+            "Claim-level citation verification SKIPPED: no model configured. "
+            f"{len(citations)} citations were NOT checked against the topic."
+        )
+        return
+
+    try:
+        verifier = CitationClaimVerifier(
+            model=ctx.model,
+            citation_database=ctx.citation_database,
+            max_pairs=len(citations),
+        )
+        verdicts = verifier.verify_citations_against_topic(ctx.topic)
+    except Exception as e:
+        logger.warning(f"Claim-level citation verification failed: {e}")
+        logger.warning("Continuing with unverified citation-topic relevance...")
+        return
+
+    if not verdicts:
+        logger.info("Claim-level citation verification produced no verdicts")
+        return
+
+    stats = summarize_verdicts(verdicts)
+
+    # Persist the evidence before acting on it.
+    try:
+        research_dir = ctx.folders['research']
+        (research_dir / "citation_claim_verification.md").write_text(
+            verifier.format_report(verdicts), encoding='utf-8'
+        )
+        (research_dir / "citation_claim_verification.json").write_text(
+            json.dumps(
+                {'topic': ctx.topic, 'stats': stats, 'verdicts': [v.to_dict() for v in verdicts]},
+                indent=2,
+                ensure_ascii=False,
+            ),
+            encoding='utf-8',
+        )
+    except Exception as e:
+        logger.warning(f"Could not write claim verification report: {e}")
+
+    logger.info(
+        f"Claim-level citation verification: {stats['total_pairs']} checked, "
+        f"{stats['relevant']} relevant, {stats['irrelevant']} irrelevant, "
+        f"{stats['uncertain']} uncertain"
+    )
+
+    drop_enabled = validation_cfg is None or validation_cfg.claim_verification_drop_irrelevant
+    min_confidence = validation_cfg.claim_verification_min_confidence if validation_cfg else 0.7
+
+    if not drop_enabled:
+        if ctx.verbose and stats['irrelevant']:
+            print(
+                f"⚠️  {stats['irrelevant']} citations judged irrelevant to the topic "
+                f"(reported only; removal disabled)"
+            )
+        return
+
+    drop_ids = {
+        v.citation_id
+        for v in verdicts
+        if v.verdict == VERDICT_IRRELEVANT and v.confidence >= min_confidence
+    }
+    if not drop_ids:
+        return
+
+    remaining = [c for c in ctx.citation_database.citations if c.id not in drop_ids]
+
+    if not remaining:
+        # Removing everything is far more likely to be a bad judge run than a
+        # bibliography that is entirely off-topic. Report it, change nothing.
+        logger.warning(
+            f"Claim verification would have removed ALL {len(drop_ids)} citations. "
+            f"Keeping them and reporting instead; see citation_claim_verification.md."
+        )
+        return
+
+    for v in verdicts:
+        if v.citation_id in drop_ids:
+            logger.info(
+                f"Removing off-topic citation {v.citation_id} "
+                f"(confidence {v.confidence:.2f}): {v.reasoning[:120]}"
+            )
+
+    ctx.citation_database.citations = remaining
+    save_citation_database(ctx.citation_database, citation_db_path)
+
+    if ctx.verbose:
+        print(
+            f"🔎 Claim check: removed {len(drop_ids)} citations judged irrelevant "
+            f"to the topic (confidence >= {min_confidence:.2f})"
+        )
 
 
 def _build_citation_summary(citation_database) -> str:
