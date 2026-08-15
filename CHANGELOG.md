@@ -27,7 +27,8 @@ All notable changes are documented in this file.
 ### Changed
 - **BREAKING (behaviour):** `CitationResearcher.require_multi_source` defaults
   to `True`. A citation is kept only if at least 2 of {Crossref, OpenAlex,
-  Semantic Scholar} independently hold its DOI. Single-source results are now
+  Semantic Scholar} hold its DOI (one of them may be the database that
+  returned it, which is not re-queried). Single-source results are now
   dropped. **Expect fewer citations per draft.** Set
   `require_multi_source=False` for the old first-responder behaviour; those
   citations are then tagged `not_checked` rather than confirmed.
@@ -37,7 +38,18 @@ All notable changes are documented in this file.
 - DOI-less web-search results are dropped by default; set
   `allow_unconfirmed_web_sources=True` to keep them (kept tagged).
 - The citation phase now uses `CitationQualityFilter(strict_mode=True)`,
-  matching the class default. It previously overrode it to `False`.
+  matching the class default. It previously overrode it to `False`. Strict mode
+  also deletes on `invalid_author` and `invalid_doi`, where lenient mode only
+  reported them. Note one consequence: `citation_validator` flags an
+  initials-only author (for example `E. A. W.`) as invalid, and some legitimate
+  Crossref records carry exactly that, so such a citation is now removed rather
+  than merely flagged.
+- **A run can now fail outright where it previously produced a weak draft.**
+  Strict multi-source confirmation, the strict quality filter and claim-level
+  removal all shrink the bibliography, and `validate_citation_phase()` in
+  `draft_generator.py` raises `PipelineValidationError` when no citations
+  survive. If that happens, widen the search (more research topics) or relax
+  `require_multi_source` / `CLAIM_VERIFICATION_DROP_IRRELEVANT` deliberately.
 - `CitationResearcher` raises at construction if multi-source confirmation is
   required but fewer databases are enabled than the threshold needs.
 

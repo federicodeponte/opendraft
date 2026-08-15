@@ -9,7 +9,7 @@ import re
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,9 @@ logger = logging.getLogger(__name__)
 # Verification vocabulary
 #
 # These strings are written into the citation record and persisted to
-# bibliography.json, so a downstream reader can always tell HOW a citation
-# was established. Do not reuse or repurpose the values.
+# bibliography.json, so a downstream reader can tell HOW a citation was
+# established. A citation with no verification_status at all predates this
+# feature and was not checked by it. Do not reuse or repurpose the values.
 # =========================================================================
 
 # Confirmed by >= min_confirming_sources distinct scholarly databases.
@@ -59,7 +60,7 @@ SCHOLARLY_SOURCES = ("Crossref", "OpenAlex", "Semantic Scholar")
 # spelling and hyphenation across databases. Measured example, DOI
 # 10.1038/nature12373: Crossref says "Nanometre-scale thermometry in a living
 # cell", Semantic Scholar says "Nanometer scale thermometry in a living cell",
-# which scores 0.75 under this metric.
+# which scores 0.80 under this metric (after stop-word removal).
 TITLE_SIMILARITY_THRESHOLD = 0.5
 
 
@@ -79,24 +80,56 @@ def normalize_doi(doi: Optional[str]) -> str:
     if not doi:
         return ""
     value = str(doi).strip()
-    value = re.sub(r'^https?://(dx\.)?doi\.org/', '', value, flags=re.IGNORECASE)
-    value = re.sub(r'^doi:', '', value, flags=re.IGNORECASE)
+    # Accept the schemeless form ("doi.org/10.x/y") and the www. host as well as
+    # dx. — a DOI scraped off a page arrives in all of these. Missing one used to
+    # produce a lookup miss in every database, which then read as "no database
+    # has this work" and silently dropped a real citation.
+    value = re.sub(r'^(https?://)?(dx\.|www\.)?doi\.org/', '', value, flags=re.IGNORECASE)
+    value = re.sub(r'^doi:\s*', '', value, flags=re.IGNORECASE)
+    # Trailing sentence punctuation from scraped text is not part of the DOI.
+    value = value.strip().rstrip('.,;)')
     return value.strip().lower()
 
 
+# Words carrying no discriminating power in a title comparison. Without this,
+# two unrelated papers sharing only "the/of/a" score as a match.
+_TITLE_STOP_WORDS = frozenset({
+    "a", "an", "the", "of", "on", "in", "for", "and", "or", "to", "with",
+    "is", "are", "at", "by", "from", "as", "its", "it", "this", "that",
+})
+
+
 def _title_tokens(title: Optional[str]) -> Set[str]:
-    """Split a title into lowercase alphanumeric tokens for comparison."""
+    """Split a title into lowercase alphanumeric tokens, minus stop words."""
     if not title:
         return set()
-    return set(re.findall(r'[a-z0-9]+', str(title).lower()))
+    tokens = set(re.findall(r'[a-z0-9]+', str(title).lower()))
+    meaningful = tokens - _TITLE_STOP_WORDS
+    # A title made entirely of stop words still has to compare as something.
+    return meaningful or tokens
 
 
 def title_similarity(left: Optional[str], right: Optional[str]) -> float:
     """
     Overlap between two titles as a fraction of the smaller token set.
 
-    Using the smaller set as denominator keeps a subtitle-truncated record
-    from being scored as a mismatch.
+    Using the smaller set as denominator keeps a subtitle-truncated record from
+    being scored as a mismatch: databases routinely hold "Title" where another
+    holds "Title: A Longer Subtitle".
+
+    KNOWN WEAKNESS, stated because the guard is easy to over-trust. That same
+    choice of denominator means a very short title is almost always "similar" to
+    a longer one that contains its words. Measured, after stop-word removal:
+
+        'Attention'  vs 'Attention Is All You Need'          -> 1.00
+        'A Study'    vs 'A Study of Beekeeping in Bavaria'    -> 1.00
+
+    So for one- or two-word titles this check cannot meaningfully fire. It is a
+    secondary sanity guard only; the DOI is the identity key, and this exists
+    solely to catch a database returning a clearly unrelated record. It is
+    deliberately biased towards accepting, because a false rejection deletes a
+    real citation while a false acceptance only keeps one whose DOI already
+    matched.
 
     Returns:
         0.0 to 1.0; 0.0 if either title is empty
@@ -123,12 +156,17 @@ class ConfirmationResult:
 
     When auditing output, ``independently_confirmed_by`` is the list that was
     actually re-checked here.
+
+    ``failed_sources`` is equally load-bearing: a database that errored out did
+    NOT say the work is absent, it said nothing at all. "We could not reach it"
+    and "it is not there" must never be recorded as the same thing.
     """
 
     status: str
     confirming_sources: List[str] = field(default_factory=list)
     independently_confirmed_by: List[str] = field(default_factory=list)
     checked_sources: List[str] = field(default_factory=list)
+    failed_sources: List[str] = field(default_factory=list)
     doi: str = ""
     notes: str = ""
 
@@ -139,6 +177,11 @@ class ConfirmationResult:
     @property
     def source_count(self) -> int:
         return len(self.confirming_sources)
+
+    @property
+    def had_lookup_failures(self) -> bool:
+        """True if any database was unreachable, making this verdict provisional."""
+        return bool(self.failed_sources)
 
 
 class MultiSourceConfirmer:
@@ -233,8 +276,16 @@ class MultiSourceConfirmer:
         """
         return len(self.available_sources) >= self.min_confirming_sources
 
-    def _lookup(self, source: str, doi: str) -> Optional[Dict[str, Any]]:
-        """Look up a DOI in one database, with per-run caching."""
+    def _lookup(self, source: str, doi: str) -> Tuple[Optional[Dict[str, Any]], bool]:
+        """
+        Look up a DOI in one database, with per-run caching.
+
+        Returns:
+            (record, reachable). record is None both when the database has no
+            such DOI and when the lookup failed, so the second element carries
+            the difference. A failed lookup is NOT evidence of absence, and the
+            caller must not record it as such.
+        """
         cache_key = (source, doi)
         with self._cache_lock:
             if cache_key in self._lookup_cache:
@@ -242,18 +293,19 @@ class MultiSourceConfirmer:
 
         client = self._clients.get(source)
         result: Optional[Dict[str, Any]] = None
+        reachable = True
         if client is not None:
             try:
                 result = client.get_paper_by_doi(doi)
             except Exception as e:
-                # A network or parsing failure is not a refutation. Treat it as
-                # "no confirmation from this source" and say so in the log.
+                # A network or parsing failure is not a refutation.
                 logger.warning(f"{source}: DOI confirmation lookup failed for '{doi}': {e}")
                 result = None
+                reachable = False
 
         with self._cache_lock:
-            self._lookup_cache[cache_key] = result
-        return result
+            self._lookup_cache[cache_key] = (result, reachable)
+        return (result, reachable)
 
     def confirm(
         self,
@@ -301,6 +353,7 @@ class MultiSourceConfirmer:
             finder = found_by
 
         independently_confirmed: Set[str] = set()
+        failed: Set[str] = set()
         to_check = [s for s in self.available_sources if s not in confirming]
 
         if to_check:
@@ -309,9 +362,14 @@ class MultiSourceConfirmer:
                 for future in as_completed(futures):
                     source = futures[future]
                     try:
-                        record = future.result()
+                        record, reachable = future.result()
                     except Exception as e:
                         logger.warning(f"{source}: confirmation future failed for '{doi}': {e}")
+                        failed.add(source)
+                        continue
+                    if not reachable:
+                        # Unreachable, so this database expressed no opinion.
+                        failed.add(source)
                         continue
                     if not record:
                         continue
@@ -330,9 +388,20 @@ class MultiSourceConfirmer:
                             f"'{str(record.get('title'))[:80]}' vs '{str(title)[:80]}'"
                         )
 
-        checked = sorted(set(self.available_sources) | confirming)
+        ordered_failed = [s for s in SCHOLARLY_SOURCES if s in failed]
+        # A database that errored was NOT checked. Excluding it here keeps
+        # checked_sources from claiming a lookup that never returned an answer.
+        checked = sorted((set(self.available_sources) - failed) | confirming)
         ordered_confirming = [s for s in SCHOLARLY_SOURCES if s in confirming]
         ordered_independent = [s for s in SCHOLARLY_SOURCES if s in independently_confirmed]
+
+        # "No record" must be phrased so it only covers databases that actually
+        # answered. Anything unreachable is reported separately as unknown.
+        absent_phrase = (
+            "no other reachable scholarly database returned a record for this DOI"
+            if ordered_failed else
+            "no other scholarly database returned a record for this DOI"
+        )
 
         # Describe the finder separately so the note never implies this class
         # re-checked a source it only took on trust.
@@ -341,11 +410,17 @@ class MultiSourceConfirmer:
             if ordered_independent:
                 provenance += f"; independently confirmed by {', '.join(ordered_independent)}"
             else:
-                provenance += "; no other scholarly database returned a record for this DOI"
+                provenance += f"; {absent_phrase}"
         elif ordered_independent:
             provenance = f"independently confirmed by {', '.join(ordered_independent)}"
         else:
-            provenance = "no scholarly database returned a record for this DOI"
+            provenance = absent_phrase
+
+        if ordered_failed:
+            provenance += (
+                f"; NOT REACHED (lookup failed, verdict provisional): "
+                f"{', '.join(ordered_failed)}"
+            )
 
         if len(ordered_confirming) >= self.min_confirming_sources:
             status = VERIFICATION_MULTI_SOURCE
@@ -370,6 +445,7 @@ class MultiSourceConfirmer:
             confirming_sources=ordered_confirming,
             independently_confirmed_by=ordered_independent,
             checked_sources=checked,
+            failed_sources=ordered_failed,
             doi=doi,
             notes=notes,
         )

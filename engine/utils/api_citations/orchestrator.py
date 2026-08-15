@@ -8,6 +8,7 @@ import logging
 import json
 import os
 import sys
+import threading
 from typing import Optional, Dict, Any, Tuple, List, Callable
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeoutError
@@ -47,6 +48,7 @@ from .multi_source import (
     VERIFICATION_MULTI_SOURCE,
     VERIFICATION_NOT_CHECKED,
     VERIFICATION_SINGLE_SOURCE,
+    VERIFICATION_UNCONFIRMED,
     VERIFICATION_WEB_SEARCH,
 )
 
@@ -294,6 +296,11 @@ class CitationResearcher:
                 f"min_confirming_sources, or set require_multi_source=False."
             )
 
+        # Guards mutation of self.cache. agent_runner runs research_citation()
+        # across worker threads on one shared instance, and both the discovery
+        # path and the cache-hit path now write verdicts back.
+        self._cache_write_lock = threading.Lock()
+
         # Load persistent cache (or initialize empty if file doesn't exist)
         self.cache: Dict[str, Optional[Tuple[Dict[str, Any], str]]] = self._load_cache()
 
@@ -367,11 +374,21 @@ class CitationResearcher:
         Save citation cache to disk.
 
         Persists the in-memory cache to a JSON file for reuse across runs.
+
+        agent_runner drives research_citation() from several worker threads on
+        one shared researcher, so self.cache is mutated concurrently. Iterating
+        it directly raised "dictionary changed size during iteration" and could
+        interleave two writers into one file. The snapshot below is taken under
+        a lock, and the file is written atomically via a temporary file plus
+        os.replace, so a reader never sees a half-written cache.
         """
         try:
+            with self._cache_write_lock:
+                snapshot = list(self.cache.items())
+
             # Convert cache to JSON-serializable format
             cache_data = {}
-            for topic, value in self.cache.items():
+            for topic, value in snapshot:
                 if value is None:
                     cache_data[topic] = None
                 elif isinstance(value, list):
@@ -394,8 +411,27 @@ class CitationResearcher:
                     logger.warning(f"Unexpected cache format for topic '{topic}': {type(value)}")
                     cache_data[topic] = None
 
-            with open(self.CACHE_FILE, 'w', encoding='utf-8') as f:
-                json.dump(cache_data, f, indent=2, ensure_ascii=False)
+            # Write to a temp file in the same directory, then rename. os.replace
+            # is atomic on POSIX and Windows, so a concurrent reader sees either
+            # the old cache or the new one, never a truncated file.
+            import tempfile
+
+            cache_path = Path(self.CACHE_FILE)
+            target_dir = cache_path.parent if str(cache_path.parent) else Path('.')
+            fd, tmp_name = tempfile.mkstemp(
+                dir=str(target_dir), prefix='.citation_cache_', suffix='.tmp'
+            )
+            try:
+                with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                    json.dump(cache_data, f, indent=2, ensure_ascii=False)
+                os.replace(tmp_name, str(cache_path))
+            except BaseException:
+                # Never leave the temp file behind on a failed write.
+                try:
+                    os.unlink(tmp_name)
+                except OSError:
+                    pass
+                raise
 
             logger.debug(f"Saved {len(cache_data)} citations to cache file {self.CACHE_FILE}")
         except Exception as e:
@@ -424,13 +460,23 @@ class CitationResearcher:
                 # Single (metadata, source) tuple - convert to list
                 cached_list = [cached]
 
-            # Verify cache hits too. A cache file written before verification
-            # existed carries no verification_status, and must not be allowed
-            # to bypass the current strictness settings.
+            # Verify cache hits too. An entry written before verification
+            # existed carries no verification_status, and one written by a laxer
+            # run carries a weaker verdict; neither may bypass the current
+            # strictness settings.
+            #
+            # Snapshot the stored verdicts BEFORE verifying: _verify_results
+            # mutates each metadata dict in place, so comparing lengths
+            # afterwards would miss the case where nothing was dropped but a
+            # verdict was added or refreshed. Missing that meant the DOI lookups
+            # were repeated on every subsequent run.
+            before = [dict(m) for m, _ in cached_list]
             verified_cached = self._verify_results(cached_list)
-            if len(verified_cached) != len(cached_list):
-                # Persist the verdicts so the same entries are not re-checked
-                # on every run.
+            changed = (
+                len(verified_cached) != len(cached_list)
+                or any(dict(m) != old for (m, _), old in zip(cached_list, before))
+            )
+            if changed:
                 self.cache[topic] = verified_cached if verified_cached else None
                 self._save_cache()
 
@@ -732,6 +778,17 @@ class CitationResearcher:
         metadata["verification_status"] = result.status
         metadata["verification_sources"] = list(result.confirming_sources)
         metadata["verification_notes"] = result.notes
+        # Which databases this run actually re-queried, as opposed to the
+        # finder's own assertion. Persisted rather than left only in the prose
+        # of verification_notes, because it is the auditable part of the claim.
+        metadata["verification_independent_sources"] = list(result.independently_confirmed_by)
+        # Databases that could not be reached. Their silence is not evidence of
+        # absence, so a verdict carrying this list is provisional.
+        metadata["verification_unreachable_sources"] = list(result.failed_sources)
+        # The threshold this verdict was produced under, so a later run with a
+        # stricter setting can tell the verdict is stale (see
+        # _revalidate_cached_verdict).
+        metadata["verification_min_sources"] = self.min_confirming_sources
 
     def _keep_after_verification(self, metadata: Dict[str, Any], source: Optional[str]) -> bool:
         """
@@ -744,14 +801,35 @@ class CitationResearcher:
         title = str(metadata.get("title", ""))[:70]
 
         if status == VERIFICATION_MULTI_SOURCE:
+            # Do not take the label on trust. Re-check the recorded count
+            # against THIS run's threshold, so a verdict produced by a
+            # differently-configured confirmer (or restored from a cache written
+            # at a lower threshold) cannot pass as confirmed here.
+            confirmed_by = len(metadata.get('verification_sources') or [])
+            if self.require_multi_source and confirmed_by < self.min_confirming_sources:
+                logger.info(
+                    f"Dropping citation '{title}' labelled {VERIFICATION_MULTI_SOURCE}: "
+                    f"held by {confirmed_by} scholarly database(s), this run needs "
+                    f"{self.min_confirming_sources}."
+                )
+                return False
             return True
 
         if status == VERIFICATION_LLM_UNVERIFIED:
             # Multi-source confirmation cannot apply here: there is no DOI to
-            # look up and no database claims the work. The operator turned
-            # enable_llm_fallback on deliberately, so dropping it here would
-            # make that flag do nothing. It is kept and permanently tagged
-            # instead; the tag is the safeguard, not removal.
+            # look up and no database claims the work. If the operator turned
+            # enable_llm_fallback on deliberately, dropping it would make that
+            # flag do nothing, so it is kept and permanently tagged; the tag is
+            # the safeguard, not removal.
+            if not self.enable_llm_fallback:
+                # But this run did NOT ask for LLM assertions. Reaching here
+                # means the verdict came from the on-disk cache, written by an
+                # earlier run that did. Honour THIS run's setting.
+                logger.info(
+                    f"Dropping cached LLM-asserted citation '{title}': "
+                    f"enable_llm_fallback is False for this run."
+                )
+                return False
             logger.warning(
                 f"Keeping LLM-asserted, UNVERIFIED citation '{title}' "
                 f"(enable_llm_fallback=True). Tagged {VERIFICATION_LLM_UNVERIFIED}."
@@ -768,19 +846,75 @@ class CitationResearcher:
             return False
 
         if status == VERIFICATION_NOT_CHECKED:
-            # Only reachable when require_multi_source is False.
+            # Reachable two ways: this run has require_multi_source disabled, or
+            # a cached verdict was written by an earlier run that did. In strict
+            # mode _revalidate_cached_verdict() clears it for re-checking before
+            # we get here, so a not_checked reaching this point means the caller
+            # really did opt out.
             return True
 
-        # VERIFICATION_SINGLE_SOURCE
-        if self.require_multi_source:
-            logger.info(
-                f"Dropping single-source citation '{title}': held by "
-                f"{len(metadata.get('verification_sources') or [])} scholarly database(s), "
-                f"needs {self.min_confirming_sources}. "
-                f"{metadata.get('verification_notes', '')}"
+        if status in (VERIFICATION_SINGLE_SOURCE, VERIFICATION_UNCONFIRMED):
+            if self.require_multi_source:
+                held_by = len(metadata.get('verification_sources') or [])
+                label = "unconfirmed" if status == VERIFICATION_UNCONFIRMED else "single-source"
+                logger.info(
+                    f"Dropping {label} citation '{title}': held by {held_by} "
+                    f"scholarly database(s), needs {self.min_confirming_sources}. "
+                    f"{metadata.get('verification_notes', '')}"
+                )
+                return False
+            return True
+
+        # Unrecognised status. Refuse to guess: an unknown provenance is not
+        # evidence of confirmation, so it is dropped under strict settings.
+        logger.warning(
+            f"Citation '{title}' carries unrecognised verification_status "
+            f"'{status}'. Treating it as unconfirmed."
+        )
+        return not self.require_multi_source
+
+    def _revalidate_cached_verdict(self, metadata: Dict[str, Any]) -> None:
+        """
+        Discard a stored verdict that was produced under weaker settings.
+
+        The on-disk cache is a single unversioned file in the working
+        directory. One run with require_multi_source=False writes
+        `not_checked` verdicts into it; without this, a later run using the
+        strict default would hand those citations straight back, unconfirmed,
+        because _tag_verification() early-returns on any existing status.
+
+        A verdict is kept only if it was produced under settings at least as
+        strict as the current ones. Otherwise the verification fields are
+        stripped so the candidate is confirmed again from scratch.
+
+        LLM-asserted verdicts are deliberately NOT cleared here: there is
+        nothing to re-confirm. _keep_after_verification() drops them when this
+        run has enable_llm_fallback off.
+        """
+        status = metadata.get("verification_status")
+        if not status or not self.require_multi_source:
+            return
+        if status == VERIFICATION_LLM_UNVERIFIED:
+            return
+
+        recorded_threshold = metadata.get("verification_min_sources")
+        stale = (
+            status == VERIFICATION_NOT_CHECKED
+            or not isinstance(recorded_threshold, int)
+            or recorded_threshold < self.min_confirming_sources
+        )
+        if stale:
+            logger.debug(
+                f"Discarding cached verdict '{status}' (threshold "
+                f"{recorded_threshold!r} < {self.min_confirming_sources}); re-confirming."
             )
-            return False
-        return True
+            for key in (
+                "verification_status",
+                "verification_sources",
+                "verification_notes",
+                "verification_min_sources",
+            ):
+                metadata.pop(key, None)
 
     def _verify_results(
         self,
@@ -790,13 +924,16 @@ class CitationResearcher:
         Tag every candidate with its verification provenance, then filter.
 
         Runs on freshly discovered results AND on results restored from the
-        on-disk cache, so a cache entry written before verification existed
-        cannot bypass the current strictness settings.
+        on-disk cache. Cached verdicts are re-checked against the CURRENT
+        settings first (see _revalidate_cached_verdict), so a cache file
+        written by a laxer run cannot smuggle an unconfirmed citation past
+        strict mode.
         """
         kept: List[Tuple[Dict[str, Any], str]] = []
         for metadata, source in valid_results:
             if not isinstance(metadata, dict):
                 continue
+            self._revalidate_cached_verdict(metadata)
             self._tag_verification(metadata, source)
             if self._keep_after_verification(metadata, source):
                 kept.append((metadata, source))
@@ -1009,6 +1146,8 @@ class CitationResearcher:
                 verification_status=metadata.get("verification_status"),
                 verification_sources=metadata.get("verification_sources"),
                 verification_notes=metadata.get("verification_notes"),
+                verification_independent_sources=metadata.get("verification_independent_sources"),
+                verification_unreachable_sources=metadata.get("verification_unreachable_sources"),
             )
 
             return citation

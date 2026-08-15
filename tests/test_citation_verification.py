@@ -360,12 +360,17 @@ class TestUnverifiedSourceMarking:
         assert make_researcher(gemini_model=model, enable_llm_fallback=True).enable_llm_fallback is True
 
     def test_llm_citation_is_tagged_unverified_with_no_sources(self):
+        # enable_llm_fallback must be ON here: a run that did not ask for LLM
+        # assertions now drops them (see the cached-verdict test below), so
+        # without a model this would assert the wrong thing.
         researcher = make_researcher(
             confirmer=MultiSourceConfirmer(
                 crossref_client=FakeDOIClient({}),
                 openalex_client=FakeDOIClient({}),
                 semantic_scholar_client=FakeDOIClient({}),
             ),
+            gemini_model=FakeModel(lambda p: ""),
+            enable_llm_fallback=True,
         )
 
         kept = researcher._verify_results(
@@ -499,6 +504,9 @@ class TestCachePersistence:
             crossref_client=FakeDOIClient(held),
             openalex_client=FakeDOIClient(held),
             semantic_scholar_client=FakeDOIClient({}),
+            # Must mirror the researcher, or the two disagree about what
+            # "confirmed" means and the test proves nothing.
+            min_confirming_sources=researcher.min_confirming_sources,
         )
         return researcher
 
@@ -537,6 +545,254 @@ class TestCachePersistence:
         researcher = self._researcher({}, require_multi_source=True)
 
         assert researcher.research_citation("topic-b") == []
+
+    def test_not_checked_verdict_from_a_lax_run_is_reconfirmed_under_strict(self, tmp_path, monkeypatch):
+        """
+        The cache file is a single unversioned file in the working directory.
+        One run with require_multi_source=False writes `not_checked` verdicts
+        into it; a later run using the strict default must NOT hand those back.
+        """
+        monkeypatch.chdir(tmp_path)
+
+        lax = self._researcher({}, require_multi_source=False)
+        lax.cache["topic-c"] = lax._verify_results([
+            ({"doi": "10.1/nobody", "title": "Nobody Has This",
+              "authors": ["Kucsko"], "year": 2019}, "Crossref"),
+        ])
+        lax._save_cache()
+        on_disk = json.loads((tmp_path / ".citation_cache_orchestrator.json").read_text())
+        assert on_disk["topic-c"][0][0]["verification_status"] == VERIFICATION_NOT_CHECKED
+
+        # No database holds the DOI, so re-confirmation must reject it.
+        strict = self._researcher({}, require_multi_source=True)
+
+        assert strict.research_citation("topic-c") == []
+
+    def test_cached_llm_verdict_is_dropped_when_this_run_disallows_llm(self, tmp_path, monkeypatch):
+        """
+        A citation cached while enable_llm_fallback=True must not be returned by
+        a later run that has it off. There is nothing to re-confirm, so the
+        verdict stands and the citation is dropped instead.
+        """
+        monkeypatch.chdir(tmp_path)
+        cached = {
+            "topic-d": [[
+                {"doi": "10.1/llm", "title": "A Paper The LLM Believes In",
+                 "authors": ["Kucsko"], "year": 2019,
+                 "verification_status": VERIFICATION_LLM_UNVERIFIED,
+                 "verification_sources": []},
+                "Gemini LLM",
+            ]]
+        }
+        (tmp_path / ".citation_cache_orchestrator.json").write_text(json.dumps(cached))
+
+        researcher = self._researcher({}, require_multi_source=True)
+        assert researcher.enable_llm_fallback is False
+
+        assert researcher.research_citation("topic-d") == []
+
+    def test_a_stricter_threshold_invalidates_a_weaker_cached_verdict(self, tmp_path, monkeypatch):
+        """A verdict made at threshold 2 is stale for a run requiring 3."""
+        monkeypatch.chdir(tmp_path)
+        held = {"10.1/x": {"title": "A Real Paper"}}
+
+        run2 = self._researcher(held, require_multi_source=True, min_confirming_sources=2)
+        run2.cache["topic-e"] = run2._verify_results([
+            ({"doi": "10.1/x", "title": "A Real Paper",
+              "authors": ["Kucsko"], "year": 2020}, "Crossref"),
+        ])
+        run2._save_cache()
+
+        # Only Crossref (finder) + OpenAlex hold it -> 2, short of 3.
+        run3 = self._researcher(held, require_multi_source=True, min_confirming_sources=3)
+
+        assert run3.research_citation("topic-e") == []
+
+
+class TestLookupFailureIsNotAbsence:
+    """
+    A database that errored said nothing. Recording that as "no record found"
+    would delete real citations during, for example, a Semantic Scholar 403
+    rate-limit episode, while the output claimed the database had no record.
+    """
+
+    def test_failed_lookups_are_reported_separately_from_absence(self):
+        from utils.api_citations.multi_source import MultiSourceConfirmer
+
+        confirmer = MultiSourceConfirmer(
+            crossref_client=FakeDOIClient({REAL_DOI: {"title": REAL_TITLE}}),
+            openalex_client=FakeDOIClient(raises=True),
+            semantic_scholar_client=FakeDOIClient(raises=True),
+        )
+
+        result = confirmer.confirm({"doi": REAL_DOI, "title": REAL_TITLE}, found_by="Crossref")
+
+        assert result.failed_sources == ["OpenAlex", "Semantic Scholar"]
+        assert result.had_lookup_failures is True
+        # An unreachable database must not be listed as one that was checked.
+        assert "OpenAlex" not in result.checked_sources
+        assert "Semantic Scholar" not in result.checked_sources
+        assert "NOT REACHED" in result.notes
+
+    def test_unreachable_sources_are_persisted_on_the_citation(self):
+        researcher = make_researcher(
+            confirmer=MultiSourceConfirmer(
+                crossref_client=FakeDOIClient({REAL_DOI: {"title": REAL_TITLE}}),
+                openalex_client=FakeDOIClient(raises=True),
+                semantic_scholar_client=FakeDOIClient(raises=True),
+            ),
+            require_multi_source=False,  # keep it so we can inspect the record
+        )
+        metadata = {"doi": REAL_DOI, "title": REAL_TITLE}
+
+        # require_multi_source=False skips lookups, so confirm directly and tag.
+        researcher.require_multi_source = True
+        researcher._tag_verification(metadata, "Crossref")
+
+        assert metadata["verification_unreachable_sources"] == ["OpenAlex", "Semantic Scholar"]
+
+        citation = Citation(
+            "cite_001", ["Kucsko"], 2013, REAL_TITLE, "journal", doi=REAL_DOI,
+            verification_status=metadata["verification_status"],
+            verification_sources=metadata["verification_sources"],
+            verification_independent_sources=metadata["verification_independent_sources"],
+            verification_unreachable_sources=metadata["verification_unreachable_sources"],
+        )
+
+        assert citation.to_dict()["verification_unreachable_sources"] == [
+            "OpenAlex", "Semantic Scholar"
+        ]
+
+
+# =========================================================================
+# 3c. The production wiring itself
+#
+# An adversarial review found that removing the verification call from the
+# fresh-discovery path, or the claim-verification call from the citation phase,
+# left the ENTIRE suite green. Those are the primary production paths. These
+# tests exist so wiring the features out of the pipeline fails loudly.
+# =========================================================================
+
+class TestProductionWiring:
+
+    def test_fresh_discovery_path_verifies_before_returning(self, tmp_path, monkeypatch):
+        """
+        research_citation() on a cache MISS must run confirmation.
+
+        Every other test drives _verify_results directly or via the cache
+        branch, so nothing covered the path real runs take.
+        """
+        from utils.api_citations.multi_source import MultiSourceConfirmer
+
+        monkeypatch.chdir(tmp_path)
+        researcher = make_researcher(require_multi_source=True)
+        researcher.confirmer = MultiSourceConfirmer(
+            crossref_client=FakeDOIClient({}),      # nothing holds the DOI
+            openalex_client=FakeDOIClient({}),
+            semantic_scholar_client=FakeDOIClient({}),
+        )
+
+        # Bypass the network: discovery "finds" a single-source candidate.
+        monkeypatch.setattr(
+            researcher, "_search_api",
+            lambda api, topic: (
+                {"doi": "10.1/unconfirmable", "title": "Nobody Has This",
+                 "authors": ["Kucsko"], "year": 2020},
+                "Crossref",
+            ),
+        )
+
+        citations = researcher.research_citation("some topic")
+
+        assert citations == [], "an unconfirmable candidate must not survive discovery"
+
+    def test_fresh_discovery_keeps_and_tags_a_confirmed_candidate(self, tmp_path, monkeypatch):
+        """The mirror of the above: confirmation must not reject everything."""
+        from utils.api_citations.multi_source import MultiSourceConfirmer
+
+        monkeypatch.chdir(tmp_path)
+        held = {"10.1/real": {"title": "A Real Paper"}}
+        researcher = make_researcher(require_multi_source=True)
+        researcher.confirmer = MultiSourceConfirmer(
+            crossref_client=FakeDOIClient(held),
+            openalex_client=FakeDOIClient(held),
+            semantic_scholar_client=FakeDOIClient({}),
+        )
+        monkeypatch.setattr(
+            researcher, "_search_api",
+            lambda api, topic: (
+                {"doi": "10.1/real", "title": "A Real Paper",
+                 "authors": ["Kucsko"], "year": 2020},
+                "Crossref",
+            ),
+        )
+
+        citations = researcher.research_citation("some topic")
+
+        assert len(citations) >= 1
+        assert citations[0].verification_status == VERIFICATION_MULTI_SOURCE
+        assert citations[0].verification_independent_sources == ["OpenAlex"]
+
+    def test_citation_phase_actually_calls_claim_verification(self, tmp_path, monkeypatch):
+        """
+        run_citation_management() must invoke claim verification.
+
+        A commit once shipped this call commented out and every test stayed
+        green. This asserts the wiring, not just the helper.
+        """
+        import phases.citations as citations_phase
+
+        called = {}
+
+        def spy(ctx, db_path):
+            called["yes"] = True
+
+        monkeypatch.setattr(citations_phase, "_run_claim_verification", spy)
+
+        source = (Path(__file__).parent.parent / "engine" / "phases" / "citations.py").read_text()
+        # Guard against the call being commented out or replaced by `pass`.
+        assert "_run_claim_verification(ctx, citation_db_path)" in source
+        assert "# _run_claim_verification" not in source
+        assert "pass  # _run_claim_verification" not in source
+
+        # And prove the name the phase calls is the one we patched.
+        assert hasattr(citations_phase, "_run_claim_verification")
+        citations_phase._run_claim_verification(None, None)
+        assert called.get("yes") is True
+
+    def test_citation_compiler_does_not_enable_llm_fallback(self):
+        """
+        Missing-citation placeholders are filled mid-compilation and land
+        directly in the finished paper, so an LLM assertion there reaches the
+        reader unchecked.
+        """
+        source = (
+            Path(__file__).parent.parent / "engine" / "utils" / "citation_compiler.py"
+        ).read_text()
+
+        assert "enable_llm_fallback=False" in source
+        assert "enable_llm_fallback=True" not in source
+
+    def test_only_scholarly_sources_can_count_as_the_finder(self):
+        """
+        The finder is trusted without being re-queried, so only a real scholarly
+        database may occupy that slot. If web search or the LLM could, an
+        unconfirmed citation would reach the multi-source threshold.
+        """
+        from utils.api_citations.multi_source import MultiSourceConfirmer
+
+        held = {"10.1/x": {"title": "A Paper"}}
+        confirmer = MultiSourceConfirmer(
+            crossref_client=FakeDOIClient(held),
+            openalex_client=FakeDOIClient({}),
+            semantic_scholar_client=FakeDOIClient({}),
+        )
+
+        for impostor in ("Serper", "Gemini Grounded", "Gemini LLM"):
+            result = confirmer.confirm({"doi": "10.1/x", "title": "A Paper"}, found_by=impostor)
+            assert impostor not in result.confirming_sources
+            # Only Crossref genuinely holds it, so this is single-source.
+            assert result.status == VERIFICATION_SINGLE_SOURCE
 
 
 # =========================================================================

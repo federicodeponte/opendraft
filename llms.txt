@@ -1,6 +1,6 @@
 # OpenDraft
 
-> OpenDraft is a free, open-source Python engine that generates source-grounded academic research drafts using 19 specialized AI agents. By default a citation is kept only once its DOI has been independently confirmed in at least two of CrossRef, OpenAlex and Semantic Scholar, and every citation records which databases confirmed it. Citations are not invented. Confirmation establishes that a cited work is registered and indexed, not that it supports the claim it is attached to; a separate claim-level check covers relevance and its verdicts are LLM judgements for human review.
+> OpenDraft is a free, open-source Python engine that generates source-grounded academic research drafts using 19 specialized AI agents. By default a citation is kept only once its DOI is held by at least two of CrossRef, OpenAlex and Semantic Scholar (one of the two may be the database that returned it, which is not re-queried), and every citation records which databases confirmed it. Citations are not invented. Confirmation establishes that a cited work is registered and indexed, not that it supports the claim it is attached to; a separate claim-level check covers relevance and its verdicts are LLM judgements for human review.
 
 ## What it is
 

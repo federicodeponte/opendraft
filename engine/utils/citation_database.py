@@ -159,6 +159,8 @@ class Citation:
         verification_status: Optional[str] = None,
         verification_sources: Optional[List[str]] = None,
         verification_notes: Optional[str] = None,
+        verification_independent_sources: Optional[List[str]] = None,
+        verification_unreachable_sources: Optional[List[str]] = None,
     ):
         """
         Args (verification fields only; see utils.api_citations.multi_source):
@@ -198,6 +200,8 @@ class Citation:
         self.verification_status = verification_status
         self.verification_sources = verification_sources or []
         self.verification_notes = verification_notes
+        self.verification_independent_sources = verification_independent_sources or []
+        self.verification_unreachable_sources = verification_unreachable_sources or []
 
     def to_dict(self) -> Dict:
         """Convert to dictionary for JSON serialization."""
@@ -253,6 +257,14 @@ class Citation:
         if self.verification_status:
             data["verification_status"] = self.verification_status
             data["verification_sources"] = list(self.verification_sources)
+            # Also emitted empty: the subset this run actually re-queried, as
+            # opposed to taking the finding database at its word.
+            data["verification_independent_sources"] = list(self.verification_independent_sources)
+            if self.verification_unreachable_sources:
+                # Present only when something went wrong. Its presence means the
+                # verdict is provisional: those databases said nothing at all,
+                # which is not the same as saying the work is absent.
+                data["verification_unreachable_sources"] = list(self.verification_unreachable_sources)
             if self.verification_notes:
                 data["verification_notes"] = self.verification_notes
 
@@ -286,6 +298,8 @@ class Citation:
             verification_status=data.get("verification_status"),
             verification_sources=data.get("verification_sources"),
             verification_notes=data.get("verification_notes"),
+            verification_independent_sources=data.get("verification_independent_sources"),
+            verification_unreachable_sources=data.get("verification_unreachable_sources"),
         )
 
 

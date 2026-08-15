@@ -75,7 +75,7 @@
 
 **OpenDraft is an open-source Python engine that generates source-grounded research drafts using 19 specialized AI agents.** It is designed for academic researchers who need long-form documents (10,000–20,000+ words) with citations verified against real databases.
 
-Unlike general-purpose chatbots such as ChatGPT, OpenDraft does not invent its citations. By default a source is only included once its DOI has been independently found in at least **two** of CrossRef, OpenAlex and Semantic Scholar, and every citation records which databases confirmed it. See [Citation verification](#citation-verification) for exactly what that does and does not establish.
+Unlike general-purpose chatbots such as ChatGPT, OpenDraft does not invent its citations. By default a source is only included once its DOI is held by at least **two** of CrossRef, OpenAlex and Semantic Scholar, and every citation records which databases confirmed it and which ones this engine re-queried itself. See [Citation verification](#citation-verification) for exactly what that does and does not establish.
 
 - **OpenDraft is** a command-line tool and Python library for drafting academic papers.
 - **OpenPaper is** the hosted SaaS version of OpenDraft — generate and read fully-cited papers for free (no credit card); pay only to export the finished file.
@@ -201,11 +201,13 @@ It is a research assistance and drafting tool, not an autonomous author.
 OpenDraft uses **19 specialized AI agents** that work like a research team:
 
 ```
-📚 RESEARCH PHASE    → Finds candidate papers via CrossRef, OpenAlex, Semantic Scholar, web search
+📚 RESEARCH PHASE    → Finds candidate papers via CrossRef, OpenAlex, Semantic Scholar,
+                       web search, then confirms each DOI in 2+ of
+                       CrossRef/OpenAlex/Semantic Scholar and drops the rest
 🏗️ STRUCTURE PHASE   → Creates research outline with chapters
 ✍️ WRITING PHASE     → Drafts each section with academic tone
-🔍 CITATION PHASE    → Confirms each DOI in 2+ of CrossRef/OpenAlex/Semantic Scholar,
-                       then checks each source is on-topic for the paper
+🔍 CITATION PHASE    → Dedupes, quality-filters, then checks each surviving
+                       source is actually on-topic for the paper
 ✨ POLISH PHASE      → Refines language and formatting
 📄 EXPORT PHASE      → Generates PDF, Word, or LaTeX
 ```
@@ -301,6 +303,12 @@ Requiring two independent confirmations necessarily lets fewer candidates
 through than accepting the first responder did. That is the intended trade:
 fewer citations, each one confirmed by more than one database.
 
+**A run can now fail where it previously produced a weak draft.** Strict
+confirmation, the strict quality filter and claim-level removal all shrink the
+bibliography, and the pipeline raises `PipelineValidationError` if no citations
+survive the citation phase. If you hit that, widen the search or relax the
+settings deliberately rather than by accident.
+
 Citation counts quoted elsewhere in this README and in `EVALUATION.md` were
 measured before multi-source confirmation became the default and have **not**
 been re-measured since. Treat them as historical. If you need the old
@@ -317,7 +325,7 @@ Neither check removes the need to read the draft. See
 ## Features
 
 ### AI That Doesn't Make Up Citations
-By default a citation is kept only if its DOI is independently found in at least two of CrossRef, OpenAlex and Semantic Scholar. A source only one database knows about is dropped, not quietly accepted. Every citation in `bibliography.json` carries the list of databases that confirmed it, so an unconfirmed source can never look like a confirmed one. See [Citation verification](#citation-verification).
+By default a citation is kept only if its DOI is held by at least two of CrossRef, OpenAlex and Semantic Scholar. A source only one database knows about is dropped, not quietly accepted. Every citation in `bibliography.json` carries the list of databases that confirmed it, so an unconfirmed source can never look like a confirmed one. See [Citation verification](#citation-verification).
 
 ### Write Any Type of Academic Paper
 - Research papers (5-15 pages)
@@ -602,7 +610,7 @@ opendraft/
 **OpenDraft can generate a complete first draft** of a PhD dissertation (100+ pages) in 10–20 minutes. However, it is a drafting assistant, not an autonomous author. You must review, edit, and add your own analysis before submission.
 
 ### Does OpenDraft make up citations?
-**Citations are not invented, and the engine records exactly how each one was established.** By default a citation must have its DOI independently confirmed in at least two of CrossRef, OpenAlex and Semantic Scholar; single-source results are dropped. The LLM-asserted fallback is off by default and, if you switch it on, everything it produces is permanently tagged `llm_unverified`. Note what this proves: that the cited work is registered and indexed, not that it supports the sentence it is attached to. A separate claim-level check covers that, and its verdicts are LLM judgements for a human reviewer. See [Citation verification](#citation-verification).
+**Citations are not invented, and the engine records exactly how each one was established.** By default a citation must have its DOI held by at least two of CrossRef, OpenAlex and Semantic Scholar; single-source results are dropped. One of the two may be the database that returned the candidate, which is taken at its word rather than re-queried; `verification_independent_sources` records the ones actually re-queried. The LLM-asserted fallback is off by default and, if you switch it on, everything it produces is permanently tagged `llm_unverified`. Note what this proves: that the cited work is registered and indexed, not that it supports the sentence it is attached to. A separate claim-level check covers that, and its verdicts are LLM judgements for a human reviewer. See [Citation verification](#citation-verification).
 
 ### What is the difference between OpenDraft and OpenPaper?
 **OpenDraft** is the open-source Python engine you run locally. **OpenPaper** is the hosted SaaS version that runs OpenDraft in the cloud so you can use it in your browser without installing anything.
