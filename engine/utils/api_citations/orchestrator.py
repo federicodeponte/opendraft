@@ -40,6 +40,15 @@ from .gemini_grounded import GeminiGroundedClient
 from .serper_client import SerperClient
 from .query_router import QueryRouter, QueryClassification
 from .base import validate_publication_year, validate_author_name
+from .multi_source import (
+    MultiSourceConfirmer,
+    SCHOLARLY_SOURCES,
+    VERIFICATION_LLM_UNVERIFIED,
+    VERIFICATION_MULTI_SOURCE,
+    VERIFICATION_NOT_CHECKED,
+    VERIFICATION_SINGLE_SOURCE,
+    VERIFICATION_WEB_SEARCH,
+)
 
 from ..models import strip_markdown_json, LLMCitationResponse
 
@@ -117,22 +126,56 @@ def get_gemini_rate_limiter() -> GeminiRateLimiter:
 
 class CitationResearcher:
     """
-    Orchestrates citation research across multiple sources with intelligent fallback.
+    Finds candidate citations, then confirms them across scholarly databases.
 
-    Smart Routing (default):
+    Two distinct stages, which earlier versions of this docstring conflated:
+
+    STAGE 1 - DISCOVERY (a fallback/routing chain).
+    Locates candidate works. Any one source can satisfy this stage; that is the
+    point of a fallback chain. Discovery alone establishes nothing about
+    whether a work is real.
+
+    Smart routing (default):
     - Industry queries → Gemini Grounded → Semantic Scholar → Crossref
     - Academic queries → Crossref → Semantic Scholar → Gemini Grounded
     - Mixed queries → Semantic Scholar → Gemini Grounded → Crossref
 
-    Classic Fallback chain (if smart routing disabled):
-    1. Crossref API (best metadata, DOI-focused, academic papers)
-    2. Semantic Scholar API (better search, 200M+ papers, academic focus)
-    3. Gemini Grounded (Google Search grounding with DataForSEO fallback, web sources)
-    4. Gemini LLM (last resort, unverified)
+    Classic chain (smart routing disabled):
+    1. Crossref, 2. OpenAlex, 3. Semantic Scholar, 4. Gemini Grounded,
+    5. Gemini LLM (opt-in only; see below).
 
-    Provides 95%+ success rate vs 40% LLM-only approach.
-    Smart routing maximizes source diversity by routing to appropriate APIs first.
-    Gemini Grounded uses DataForSEO SERP API as fallback when googleSearch hits quota limits.
+    STAGE 2 - CONFIRMATION (default: on, and strict).
+    Each candidate carrying a DOI is looked up by DOI in each of the three
+    scholarly databases (Crossref, OpenAlex, Semantic Scholar) via
+    MultiSourceConfirmer. With require_multi_source=True (the default), a
+    candidate is kept only if at least min_confirming_sources (default 2)
+    distinct databases hold that DOI. Single-source candidates are dropped.
+
+    Set require_multi_source=False to opt out and accept first-responder
+    results. That is an explicit opt-out, not the default.
+
+    What confirmation does and does not mean:
+    - It means: that DOI is registered and indexed in N scholarly databases.
+    - It does NOT mean the work supports any particular claim. Claim-level
+      semantic checking is CitationClaimVerifier's job, not this class's.
+    - The three databases are not fully independent. OpenAlex and Semantic
+      Scholar both ingest Crossref metadata, so agreement is evidence of
+      registration and indexing, not three separately sourced attestations.
+
+    SOURCES THAT CANNOT BE CONFIRMED THIS WAY.
+    - Web search (Gemini Grounded / Serper) usually returns sources with no
+      DOI (industry reports, agency pages). Scholarly databases cannot be
+      queried for them, so they are tagged VERIFICATION_WEB_SEARCH and, under
+      the strict default, dropped. Set allow_unconfirmed_web_sources=True to
+      keep them; they stay tagged so a reader can see they were not confirmed.
+    - Gemini LLM last resort asserts a citation with no external lookup at all.
+      It is DISABLED by default (enable_llm_fallback=False) and must be turned
+      on deliberately. Anything it produces is tagged
+      VERIFICATION_LLM_UNVERIFIED and is never presented like a confirmed
+      citation.
+
+    Every returned Citation carries verification_status, verification_sources
+    and verification_notes, which persist into bibliography.json.
     """
 
     # Persistent cache file path
@@ -145,9 +188,12 @@ class CitationResearcher:
         enable_openalex: bool = True,
         enable_semantic_scholar: bool = True,
         enable_gemini_grounded: bool = True,
-        enable_llm_fallback: bool = True,
+        enable_llm_fallback: bool = False,
         enable_smart_routing: bool = True,
         use_serper: bool = None,  # None = auto-detect from env
+        require_multi_source: bool = True,
+        min_confirming_sources: int = 2,
+        allow_unconfirmed_web_sources: bool = False,
         verbose: bool = True,
         progress_callback: Optional[Callable[[str, str], None]] = None,
     ):
@@ -160,9 +206,23 @@ class CitationResearcher:
             enable_openalex: Whether to use OpenAlex API (250M+ works)
             enable_semantic_scholar: Whether to use Semantic Scholar API
             enable_gemini_grounded: Whether to use Gemini with Google Search grounding (includes DataForSEO fallback)
-            enable_llm_fallback: Whether to fall back to LLM if all else fails
+            enable_llm_fallback: Whether to let the LLM assert a citation when
+                every lookup fails. DEFAULT False. Nothing external checks an
+                LLM assertion, so this is opt-in and its output is always
+                tagged VERIFICATION_LLM_UNVERIFIED.
             enable_smart_routing: Whether to use smart query routing (default: True)
             use_serper: Whether to use Serper.dev instead of Gemini Grounded for web search
+            require_multi_source: Whether a citation must be held by at least
+                min_confirming_sources scholarly databases to be kept.
+                DEFAULT True. Set False to opt out and accept first-responder
+                (single-source) results.
+            min_confirming_sources: How many of {Crossref, OpenAlex, Semantic
+                Scholar} must hold the DOI (default 2). Only meaningful when
+                require_multi_source is True.
+            allow_unconfirmed_web_sources: Whether to keep DOI-less web-search
+                results, which no scholarly database can confirm. DEFAULT
+                False. When True they are kept but stay tagged
+                VERIFICATION_WEB_SEARCH.
             verbose: Whether to print progress
             progress_callback: Optional callback(message, event_type) for progress reporting
         """
@@ -174,6 +234,9 @@ class CitationResearcher:
         self.enable_gemini_grounded = enable_gemini_grounded
         self.enable_llm_fallback = enable_llm_fallback and gemini_model is not None
         self.enable_smart_routing = enable_smart_routing
+        self.require_multi_source = require_multi_source
+        self.min_confirming_sources = min_confirming_sources
+        self.allow_unconfirmed_web_sources = allow_unconfirmed_web_sources
         # Auto-detect Serper from env if not explicitly set
         if use_serper is None:
             self.use_serper = os.getenv('USE_SERPER', 'false').lower() == 'true'
@@ -208,6 +271,28 @@ class CitationResearcher:
         # Initialize smart query router
         if self.enable_smart_routing:
             self.query_router = QueryRouter()
+
+        # Multi-source confirmation across the scholarly databases that are
+        # actually enabled. Built from the same client instances used for
+        # discovery, so no extra sessions are created.
+        self.confirmer = MultiSourceConfirmer(
+            crossref_client=getattr(self, "crossref", None),
+            openalex_client=getattr(self, "openalex", None),
+            semantic_scholar_client=getattr(self, "semantic_scholar", None),
+            min_confirming_sources=self.min_confirming_sources,
+        )
+
+        # Requiring more confirmations than there are enabled databases would
+        # reject every citation. That is a misconfiguration, not a finding, so
+        # fail loudly at construction rather than silently returning nothing.
+        if self.require_multi_source and not self.confirmer.can_reach_threshold:
+            raise ValueError(
+                f"require_multi_source=True needs at least {self.min_confirming_sources} "
+                f"scholarly databases enabled, but only {len(self.confirmer.available_sources)} "
+                f"are ({', '.join(self.confirmer.available_sources) or 'none'}). "
+                f"Enable more of Crossref/OpenAlex/Semantic Scholar, lower "
+                f"min_confirming_sources, or set require_multi_source=False."
+            )
 
         # Load persistent cache (or initialize empty if file doesn't exist)
         self.cache: Dict[str, Optional[Tuple[Dict[str, Any], str]]] = self._load_cache()
@@ -339,8 +424,18 @@ class CitationResearcher:
                 # Single (metadata, source) tuple - convert to list
                 cached_list = [cached]
 
+            # Verify cache hits too. A cache file written before verification
+            # existed carries no verification_status, and must not be allowed
+            # to bypass the current strictness settings.
+            verified_cached = self._verify_results(cached_list)
+            if len(verified_cached) != len(cached_list):
+                # Persist the verdicts so the same entries are not re-checked
+                # on every run.
+                self.cache[topic] = verified_cached if verified_cached else None
+                self._save_cache()
+
             citations = []
-            for cached_metadata, cached_source in cached_list:
+            for cached_metadata, cached_source in verified_cached:
                 if self.verbose:
                     safe_print(
                         f"    ✓ Cached: {cached_metadata.get('authors', ['Unknown'])[0] if cached_metadata.get('authors') else 'Unknown'} et al. ({cached_metadata.get('year', 'n.d.')}) [from {cached_source}]"
@@ -538,10 +633,12 @@ class CitationResearcher:
                             safe_print(f"✗ Error: {e}")
                         logger.error(f"Gemini Grounded error: {e}")
 
-        # Try Gemini LLM as absolute last resort (not part of smart routing)
+        # Try Gemini LLM as absolute last resort (not part of smart routing).
+        # Disabled by default: nothing external checks what the LLM asserts.
+        # Anything produced here is tagged VERIFICATION_LLM_UNVERIFIED below.
         if not valid_results and self.enable_llm_fallback:
             if self.verbose:
-                safe_print(f"    → Trying Gemini LLM fallback...", end=" ", flush=True)
+                safe_print(f"    → Trying Gemini LLM fallback (UNVERIFIED)...", end=" ", flush=True)
             try:
                 metadata = self._llm_research(topic)
                 if metadata and (metadata.get('doi') or metadata.get('url')):
@@ -555,6 +652,11 @@ class CitationResearcher:
                 if self.verbose:
                     safe_print(f"✗ Error: {e}")
                 logger.error(f"Gemini LLM error: {e}")
+
+        # STAGE 2: confirm each candidate across the scholarly databases and
+        # drop whatever does not meet the configured strictness. Runs before
+        # caching so the cache stores verdicts, not raw first-responder hits.
+        valid_results = self._verify_results(valid_results)
 
         # Cache results (even if empty list)
         if valid_results:
@@ -585,6 +687,128 @@ class CitationResearcher:
             safe_print(f"    ✗ No citations found for: {topic[:70]}...")
 
         return citations
+
+    def _tag_verification(self, metadata: Dict[str, Any], source: Optional[str]) -> None:
+        """
+        Record on the metadata how this candidate was established.
+
+        Mutates metadata in place, adding verification_status,
+        verification_sources and verification_notes. Idempotent: a candidate
+        that already carries a status (for example one restored from the
+        on-disk cache) is left alone.
+
+        Network lookups only happen when require_multi_source is True. When the
+        caller has opted out, DOI-bearing candidates are tagged
+        VERIFICATION_NOT_CHECKED rather than being described as confirmed,
+        because in that mode nothing checked them.
+        """
+        if metadata.get("verification_status"):
+            return
+
+        if source == "Gemini LLM":
+            # No external lookup happened at any point for this candidate.
+            metadata["verification_status"] = VERIFICATION_LLM_UNVERIFIED
+            metadata["verification_sources"] = []
+            metadata["verification_notes"] = (
+                "Asserted by the LLM with no external lookup. No database was queried "
+                "and nothing confirmed that this work exists."
+            )
+            return
+
+        if not self.require_multi_source:
+            has_doi = bool(metadata.get("doi"))
+            metadata["verification_status"] = (
+                VERIFICATION_NOT_CHECKED if has_doi else VERIFICATION_WEB_SEARCH
+            )
+            metadata["verification_sources"] = []
+            metadata["verification_notes"] = (
+                f"Returned by {source or 'an unnamed source'}. Multi-source confirmation "
+                f"was disabled (require_multi_source=False), so no second database was "
+                f"queried for this record."
+            )
+            return
+
+        result = self.confirmer.confirm(metadata, found_by=source)
+        metadata["verification_status"] = result.status
+        metadata["verification_sources"] = list(result.confirming_sources)
+        metadata["verification_notes"] = result.notes
+
+    def _keep_after_verification(self, metadata: Dict[str, Any], source: Optional[str]) -> bool:
+        """
+        Decide whether a tagged candidate survives the current strictness settings.
+
+        Returns True to keep. Logs the reason whenever a candidate is dropped,
+        so a dropped citation is never silently invisible.
+        """
+        status = metadata.get("verification_status")
+        title = str(metadata.get("title", ""))[:70]
+
+        if status == VERIFICATION_MULTI_SOURCE:
+            return True
+
+        if status == VERIFICATION_LLM_UNVERIFIED:
+            # Multi-source confirmation cannot apply here: there is no DOI to
+            # look up and no database claims the work. The operator turned
+            # enable_llm_fallback on deliberately, so dropping it here would
+            # make that flag do nothing. It is kept and permanently tagged
+            # instead; the tag is the safeguard, not removal.
+            logger.warning(
+                f"Keeping LLM-asserted, UNVERIFIED citation '{title}' "
+                f"(enable_llm_fallback=True). Tagged {VERIFICATION_LLM_UNVERIFIED}."
+            )
+            return True
+
+        if status == VERIFICATION_WEB_SEARCH:
+            if self.allow_unconfirmed_web_sources or not self.require_multi_source:
+                return True
+            logger.info(
+                f"Dropping web source '{title}' from {source}: no DOI, so no scholarly "
+                f"database can confirm it. Set allow_unconfirmed_web_sources=True to keep it."
+            )
+            return False
+
+        if status == VERIFICATION_NOT_CHECKED:
+            # Only reachable when require_multi_source is False.
+            return True
+
+        # VERIFICATION_SINGLE_SOURCE
+        if self.require_multi_source:
+            logger.info(
+                f"Dropping single-source citation '{title}': held by "
+                f"{len(metadata.get('verification_sources') or [])} scholarly database(s), "
+                f"needs {self.min_confirming_sources}. "
+                f"{metadata.get('verification_notes', '')}"
+            )
+            return False
+        return True
+
+    def _verify_results(
+        self,
+        valid_results: List[Tuple[Dict[str, Any], str]],
+    ) -> List[Tuple[Dict[str, Any], str]]:
+        """
+        Tag every candidate with its verification provenance, then filter.
+
+        Runs on freshly discovered results AND on results restored from the
+        on-disk cache, so a cache entry written before verification existed
+        cannot bypass the current strictness settings.
+        """
+        kept: List[Tuple[Dict[str, Any], str]] = []
+        for metadata, source in valid_results:
+            if not isinstance(metadata, dict):
+                continue
+            self._tag_verification(metadata, source)
+            if self._keep_after_verification(metadata, source):
+                kept.append((metadata, source))
+
+        if self.verbose and len(kept) != len(valid_results):
+            dropped = len(valid_results) - len(kept)
+            safe_print(
+                f"    🔒 Verification: kept {len(kept)}, dropped {dropped} "
+                f"(need {self.min_confirming_sources} of {', '.join(SCHOLARLY_SOURCES)})"
+            )
+
+        return kept
 
     def _create_citation(self, metadata: Dict[str, Any], source: Optional[str] = None) -> Optional[Citation]:
         """
@@ -779,6 +1003,12 @@ class CitationResearcher:
                 api_source=source,  # Track which API found this citation
                 abstract=abstract,  # Include abstract from API responses
                 citation_count=metadata.get("citation_count"),
+                # Verification provenance travels with the citation into
+                # bibliography.json so a reader can always tell a
+                # database-confirmed citation from an unconfirmed one.
+                verification_status=metadata.get("verification_status"),
+                verification_sources=metadata.get("verification_sources"),
+                verification_notes=metadata.get("verification_notes"),
             )
 
             return citation
@@ -1050,6 +1280,10 @@ Return a JSON object with this structure:
         """Close API clients."""
         if hasattr(self, "crossref"):
             self.crossref.close()
+        if hasattr(self, "openalex"):
+            # Was omitted before OpenAlex became a confirmation source; its
+            # session stayed open for the life of the process.
+            self.openalex.close()
         if hasattr(self, "semantic_scholar"):
             self.semantic_scholar.close()
         if hasattr(self, "gemini_grounded"):
