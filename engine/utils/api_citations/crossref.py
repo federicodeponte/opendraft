@@ -109,6 +109,45 @@ class CrossrefClient(BaseAPIClient):
             logger.error(f"Crossref: Error parsing response: {e}")
             return None
 
+    def get_paper_by_doi(self, doi: str) -> Optional[Dict[str, Any]]:
+        """
+        Look up a single work by its DOI.
+
+        Used by MultiSourceConfirmer to independently confirm that a work found
+        by one database also exists in Crossref. A DOI lookup is an identity
+        lookup, not a relevance search, so a hit means "Crossref holds a record
+        for this exact DOI" and nothing more.
+
+        Args:
+            doi: Bare DOI string (e.g. "10.1038/nature12373"), no URL prefix
+
+        Returns:
+            Normalized metadata dict, or None if Crossref has no record for it
+        """
+        if not doi:
+            return None
+
+        response = self._make_request(
+            method="GET",
+            endpoint=f"/works/{doi}",
+        )
+
+        if not response:
+            logger.debug(f"Crossref: No record for DOI '{doi}'")
+            return None
+
+        try:
+            # A single-work response wraps the item in "message"; the item has
+            # the same shape as an element of the /works search "items" list.
+            paper = response.get("message")
+            if not isinstance(paper, dict):
+                logger.debug(f"Crossref: Unexpected DOI response shape for '{doi}'")
+                return None
+            return self._extract_metadata(paper)
+        except Exception as e:
+            logger.error(f"Crossref: Error parsing DOI response for '{doi}': {e}")
+            return None
+
     def _extract_metadata(self, paper: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Extract and normalize paper metadata from Crossref response.
