@@ -1,14 +1,14 @@
 # OpenDraft
 
-> OpenDraft is a free, open-source Python engine that generates source-grounded academic research drafts using 19 specialized AI agents. Every citation is verified against CrossRef, OpenAlex, Semantic Scholar, and arXiv before inclusion. It does not hallucinate citations.
+> OpenDraft is a free, open-source Python engine that generates source-grounded academic research drafts using 19 specialized AI agents. By default a citation is kept only once its DOI has been independently confirmed in at least two of CrossRef, OpenAlex and Semantic Scholar, and every citation records which databases confirmed it. Citations are not invented. Confirmation establishes that a cited work is registered and indexed, not that it supports the claim it is attached to; a separate claim-level check covers relevance and its verdicts are LLM judgements for human review.
 
 ## What it is
 
 - **Type**: Command-line tool and Python library (MIT license, free, self-hostable)
 - **Engine**: 19 specialized agents — research, structure, writing, citation verification, polish, export
-- **Sources**: CrossRef, OpenAlex, Semantic Scholar (500M+ works), arXiv
+- **Sources**: CrossRef, OpenAlex, Semantic Scholar. arXiv is not queried as a database.
 - **Export**: PDF, Microsoft Word (.docx), LaTeX source
-- **Output**: 5–80+ pages, 10k–20k+ words, 30–50+ verified citations per draft
+- **Output**: 5–80+ pages, 10k–20k+ words, 30–50+ confirmed citations per draft
 - **Time**: 10–20 minutes for a full draft
 - **Languages**: 57+ including English, German, Spanish, French, Chinese, Japanese
 - **Cost**: Free (self-hosted with your own Gemini/OpenAI/Claude API key)
@@ -45,7 +45,7 @@ npx opendraft "Your research topic"
 ## Key facts
 
 - 100% open source (MIT)
-- No hallucinated citations — every source is verified before inclusion
+- No hallucinated citations — a source is dropped unless 2+ scholarly databases hold its DOI, and anything unconfirmed stays tagged as such in the output
 - Supports PhD dissertations, master's theses, research papers, and literature reviews
 - GitHub: https://github.com/federicodeponte/opendraft
 - PyPI: https://pypi.org/project/opendraft/
