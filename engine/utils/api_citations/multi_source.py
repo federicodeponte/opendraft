@@ -29,6 +29,12 @@ VERIFICATION_MULTI_SOURCE = "multi_source_confirmed"
 # real as far as that one database is concerned; no second database agreed.
 VERIFICATION_SINGLE_SOURCE = "single_source"
 
+# NO scholarly database holds a record for this DOI. Kept distinct from
+# VERIFICATION_SINGLE_SOURCE, which positively asserts that one database does.
+# Reachable when a candidate carries a DOI but came from a non-scholarly source
+# (web search) and no database recognises that DOI.
+VERIFICATION_UNCONFIRMED = "unconfirmed"
+
 # Found by web search (Gemini Grounded / Serper). Not a scholarly database
 # record; typically has no DOI, so scholarly confirmation is not applicable.
 VERIFICATION_WEB_SEARCH = "web_search_unconfirmed"
@@ -190,7 +196,20 @@ class MultiSourceConfirmer:
         if semantic_scholar_client is not None:
             self._clients["Semantic Scholar"] = semantic_scholar_client
 
-        self.min_confirming_sources = max(1, min_confirming_sources)
+        # Fewer than 2 is not multi-source by definition. Honouring a 1 (or
+        # silently clamping it) would stamp multi_source_confirmed onto a
+        # citation only one database knows about, which is exactly the
+        # overstatement this class exists to prevent.
+        if min_confirming_sources < 2:
+            raise ValueError(
+                f"min_confirming_sources must be at least 2, got {min_confirming_sources}. "
+                f"Confirmation by a single database is not multi-source confirmation. "
+                f"To accept single-source citations, set require_multi_source=False on "
+                f"CitationResearcher; those citations are then tagged "
+                f"'{VERIFICATION_NOT_CHECKED}' instead of being labelled confirmed."
+            )
+
+        self.min_confirming_sources = min_confirming_sources
         self.title_similarity_threshold = title_similarity_threshold
         self.max_workers = max_workers
 
@@ -341,7 +360,9 @@ class MultiSourceConfirmer:
                 f"({', '.join(ordered_confirming)}): {provenance}."
             )
         else:
-            status = VERIFICATION_SINGLE_SOURCE
+            # Zero databases. This must NOT be reported as single_source, which
+            # positively asserts that one database holds the record.
+            status = VERIFICATION_UNCONFIRMED
             notes = f"DOI held by 0 scholarly databases: {provenance}."
 
         return ConfirmationResult(

@@ -243,6 +243,7 @@ Every citation in `bibliography.json` carries its provenance:
 |:---|:---|
 | `multi_source_confirmed` | The DOI is held by `min_confirming_sources` or more databases, listed in `verification_sources` |
 | `single_source` | Exactly one database holds the DOI. Dropped under the default settings |
+| `unconfirmed` | The DOI carries no record in **any** scholarly database. Dropped under the default settings |
 | `web_search_unconfirmed` | No DOI, so no scholarly database could be queried. Zero databases confirmed it |
 | `llm_unverified` | Asserted by the LLM with no external lookup of any kind. Nothing checked that it exists |
 | `not_checked` | Confirmation was disabled for this run |

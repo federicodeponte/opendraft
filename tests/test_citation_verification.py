@@ -36,6 +36,7 @@ from utils.api_citations.multi_source import (  # noqa: E402
     VERIFICATION_MULTI_SOURCE,
     VERIFICATION_NOT_CHECKED,
     VERIFICATION_SINGLE_SOURCE,
+    VERIFICATION_UNCONFIRMED,
     VERIFICATION_WEB_SEARCH,
     normalize_doi,
     title_similarity,
@@ -276,6 +277,57 @@ class TestSingleSourceRejection:
         result = confirmer.confirm({"doi": REAL_DOI, "title": REAL_TITLE}, found_by="Crossref")
 
         assert result.status == VERIFICATION_SINGLE_SOURCE
+
+    def test_zero_databases_is_unconfirmed_not_single_source(self):
+        """
+        A candidate with a DOI that NO database holds must not be labelled
+        `single_source`, because that status positively asserts one database
+        does hold it. Reachable when a web-search result carries a DOI.
+        """
+        confirmer = MultiSourceConfirmer(
+            crossref_client=FakeDOIClient({}),
+            openalex_client=FakeDOIClient({}),
+            semantic_scholar_client=FakeDOIClient({}),
+        )
+
+        result = confirmer.confirm(
+            {"doi": "10.9999/ghost", "title": "A Paper No Database Has"}, found_by="Serper"
+        )
+
+        assert result.status == VERIFICATION_UNCONFIRMED
+        assert result.status != VERIFICATION_SINGLE_SOURCE
+        assert result.confirming_sources == []
+
+    def test_unconfirmed_citation_is_dropped_under_the_default(self):
+        researcher = make_researcher(
+            confirmer=MultiSourceConfirmer(
+                crossref_client=FakeDOIClient({}),
+                openalex_client=FakeDOIClient({}),
+                semantic_scholar_client=FakeDOIClient({}),
+            ),
+            require_multi_source=True,
+        )
+
+        kept = researcher._verify_results(
+            [({"doi": "10.9999/ghost", "title": "A Paper No Database Has"}, "Serper")]
+        )
+
+        assert kept == []
+
+    def test_threshold_below_two_is_rejected_outright(self):
+        """
+        min_confirming_sources=1 would stamp `multi_source_confirmed` on a
+        citation only one database knows about. That is the exact overstatement
+        this class exists to prevent, so it must not be silently honoured or
+        clamped.
+        """
+        with pytest.raises(ValueError, match="at least 2"):
+            MultiSourceConfirmer(
+                crossref_client=FakeDOIClient({}),
+                openalex_client=FakeDOIClient({}),
+                semantic_scholar_client=FakeDOIClient({}),
+                min_confirming_sources=1,
+            )
 
     def test_unreachable_threshold_raises_instead_of_rejecting_everything(self):
         with pytest.raises(ValueError, match="require_multi_source"):
