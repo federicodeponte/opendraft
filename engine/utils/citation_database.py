@@ -169,9 +169,10 @@ class Citation:
                 for web sources and for LLM-asserted citations.
             verification_notes: Plain-language account of what was checked.
 
-        These three fields exist so a reader of bibliography.json can always
-        tell a database-confirmed citation from an unconfirmed one. An
-        LLM-asserted citation must never look identical to a confirmed one.
+        These three fields exist so a reader of bibliography.json can tell a
+        database-confirmed citation from an unconfirmed one. An LLM-asserted
+        citation must never look identical to a confirmed one. A record with no
+        verification_status predates the feature and was never checked by it.
         """
         self.id = citation_id
         self.authors = authors

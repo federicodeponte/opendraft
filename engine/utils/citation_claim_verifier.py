@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
 ABOUTME: Claim-level citation verification — does a citation actually support the claim it is attached to
-ABOUTME: Complements existence checking (MultiSourceConfirmer), which only proves a work is real
+ABOUTME: Complements existence checking (MultiSourceConfirmer), which only shows a DOI is indexed
 
 Two different questions, and the project needs both answered:
 
 1. "Is this a real paper?"  -> utils.api_citations.multi_source.MultiSourceConfirmer
    Confirms a DOI is registered and indexed in several scholarly databases.
+   Note that this is weaker than "the paper is sound": a retracted or
+   predatory-venue paper still has a registered, indexed DOI.
 
 2. "Does this paper support THIS sentence?"  -> this module
    A real, correctly cited, multi-source-confirmed paper can still be attached
