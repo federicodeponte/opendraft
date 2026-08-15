@@ -40,7 +40,7 @@
 | **Languages** | 57+ languages including English, Spanish, German, French, Chinese, Japanese |
 | **Export** | PDF, Microsoft Word (.docx), LaTeX |
 | **Cost** | **Free** (self-hosted, MIT license) or **free to generate &amp; read** at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) (pay only to export) |
-| **Typical output** | 5–80+ pages, 10k–20k+ words, 30–50+ verified citations |
+| **Typical output** | 5–80+ pages, 10k–20k+ words, 30–50+ citations ([measured before multi-source confirmation was made the default](#citation-verification)) |
 | **Time to draft** | 10–20 minutes |
 | **API cost per draft** | ~$0.35 (Gemini Flash) to ~$3.00 (Claude Opus) |
 
@@ -150,7 +150,7 @@ We open-sourced OpenDraft so researchers can inspect, critique, and improve how 
 
 ### What Problem Does OpenDraft Solve?
 
-1. **Hallucinated citations** — ChatGPT and similar LLMs invent citations 30–50% of the time. OpenDraft verifies every source.
+1. **Hallucinated citations** — ChatGPT and similar LLMs invent citations 30–50% of the time. OpenDraft confirms each source's DOI against multiple scholarly databases and drops the ones it cannot confirm.
 2. **Length limits** — Most AI tools cannot produce documents longer than a few thousand words. OpenDraft generates 20,000+ word research drafts.
 3. **Generic structure** — ChatGPT outputs lack proper academic chapter/section hierarchy. OpenDraft builds structured research outlines.
 4. **No export options** — ChatGPT cannot export to PDF or Word with academic formatting. OpenDraft exports to PDF, DOCX, and LaTeX.
@@ -286,6 +286,18 @@ default `0.7`), and the engine refuses to empty the bibliography outright.
 **These verdicts are language-model judgements, not proofs.** The judge reads a
 citation's title and abstract, not the paper's full text. `UNCERTAIN` means
 unchecked, not passing. Treat the output as evidence for a human reviewer.
+
+### Effect on how many citations you get
+
+Requiring two independent confirmations necessarily lets fewer candidates
+through than accepting the first responder did. That is the intended trade:
+fewer citations, each one confirmed by more than one database.
+
+Citation counts quoted elsewhere in this README and in `EVALUATION.md` were
+measured before multi-source confirmation became the default and have **not**
+been re-measured since. Treat them as historical. If you need the old
+behaviour, set `require_multi_source=False` — and note that citations then
+carry `verification_status: not_checked` rather than being labelled confirmed.
 
 ### Human review is still required
 
