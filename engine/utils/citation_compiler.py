@@ -60,10 +60,13 @@ class CitationCompiler:
 
     def _research_missing_citation(self, topic: str, verbose: bool = True) -> Optional[Citation]:
         """
-        Research a missing citation using API-backed fallback chain.
+        Research a missing citation through the API-backed researcher.
 
-        Uses intelligent fallback: Crossref → Semantic Scholar → Gemini LLM
-        Success rate: 95%+ (vs 40% LLM-only)
+        Discovery runs across Crossref / OpenAlex / Semantic Scholar / web
+        search; the result is then kept only if its DOI is independently
+        confirmed in at least 2 scholarly databases (CitationResearcher's
+        default). The LLM fallback is disabled here, so this returns None
+        rather than inventing a citation when nothing can be confirmed.
 
         Args:
             topic: Topic or description to research

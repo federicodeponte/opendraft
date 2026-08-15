@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ABOUTME: Citation research orchestrator with intelligent fallback chain
-ABOUTME: Coordinates Crossref → Semantic Scholar → Gemini Grounded → Gemini LLM for 95%+ success rate
+ABOUTME: Discovers candidates across Crossref/OpenAlex/Semantic Scholar/web, then confirms each DOI in 2+ of them
 """
 
 import logging
