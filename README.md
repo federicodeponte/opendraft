@@ -226,9 +226,16 @@ candidate's **DOI** up directly in each scholarly database and counts how many
 hold a record for it.
 
 **By default a citation is kept only if at least 2 of {CrossRef, OpenAlex,
-Semantic Scholar} independently hold its DOI.** A single-source result is
-dropped and the drop is logged. Accepting single-source results is an explicit
-opt-out (`require_multi_source=False`), not the default.
+Semantic Scholar} hold its DOI.** A single-source result is dropped and the drop
+is logged. Accepting single-source results is an explicit opt-out
+(`require_multi_source=False`), not the default.
+
+To be exact about what "2 databases hold it" means: one of the two may be the
+database that returned the candidate in the first place, which is taken at its
+word rather than re-queried. The others are looked up directly by DOI. The
+engine tracks this distinction internally (`confirming_sources` versus
+`independently_confirmed_by`) and `verification_notes` on each citation spells
+out which database found it and which ones confirmed it.
 
 | Setting | Default | Effect |
 |:---|:---|:---|
