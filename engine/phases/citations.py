@@ -92,7 +92,7 @@ def run_citation_management(ctx: DraftContext) -> None:
     # topic it was gathered for? Runs after quality filtering so no LLM call is
     # spent judging a citation that was about to be discarded anyway, and after
     # metadata scraping so abstracts are populated for the judge to read.
-    pass  # _run_claim_verification(ctx, citation_db_path)
+    _run_claim_verification(ctx, citation_db_path)
 
     if ctx.verbose:
         print(f"\u2705 Citations: {len(ctx.citation_database.citations)} unique")
