@@ -18,9 +18,7 @@
 </p>
 
 <p align="center">
-  <b>Don't want to manage API keys and infra?</b><br>
-  <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft"><strong>Use the hosted version → OpenPaper.dev</strong></a><br>
-  <sub>Free to generate &amp; read with verified citations · No API keys · No setup · No credit card</sub>
+  <sub>A hosted, managed version of this engine runs at <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft">OpenPaper.dev</a> (commercial service). This repository is the open-source engine, MIT-licensed and self-hostable.</sub>
 </p>
 
 <p align="center">
@@ -39,7 +37,7 @@
 | **Sources** | CrossRef, OpenAlex, Semantic Scholar (200M+), arXiv |
 | **Languages** | 57+ languages including English, Spanish, German, French, Chinese, Japanese |
 | **Export** | PDF, Microsoft Word (.docx), LaTeX |
-| **Cost** | **Free** (self-hosted, MIT license) or **free to generate &amp; read** at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) (pay only to export) |
+| **Cost** | Free and open source (MIT license); you bring your own model API keys. A hosted commercial version is available separately. |
 | **Typical output** | 5–80+ pages, 10k–20k+ words, 30–50+ verified citations |
 | **Time to draft** | 10–20 minutes |
 | **API cost per draft** | ~$0.35 (Gemini Flash) to ~$3.00 (Claude Opus) |
@@ -50,8 +48,7 @@
 
 - [At a Glance](#at-a-glance)
 - [What is OpenDraft?](#what-is-opendraft)
-- [Try it free — no installation](#try-it-free--no-installation)
-- [Self-hosted vs Hosted](#self-hosted-opendraft-vs-hosted-openpaper)
+- [Self-hosted vs hosted](#self-hosted-vs-hosted)
 - [Why OpenDraft Exists](#why-opendraft-exists)
 - [OpenDraft for Open Source Maintainers](#opendraft-for-open-source-maintainers)
 - [What OpenDraft is NOT](#what-opendraft-is-not)
@@ -77,11 +74,10 @@
 Unlike general-purpose chatbots such as ChatGPT, OpenDraft does not invent its citations. Every source is verified against CrossRef, OpenAlex, Semantic Scholar, and arXiv before being included in the bibliography, so every citation links to a real paper.
 
 - **OpenDraft is** a command-line tool and Python library for drafting academic papers.
-- **OpenPaper is** the hosted SaaS version of OpenDraft — generate and read fully-cited papers for free (no credit card); pay only to export the finished file.
 - **Best for:** Researchers drafting literature reviews, journal submissions, structured research papers, and thesis first drafts.
-- **Price:** 100% free and open source (MIT license).
-- **Setup time:** 10 minutes for local installation.
-- **SaaS version:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) — run it in your browser. Free to generate and read; pay only to export.
+- **License:** 100% free and open source (MIT).
+- **Setup time:** ~10 minutes for local installation.
+- **Hosted option:** a managed commercial version runs the same engine at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft), for those who prefer not to self-host.
 
 ---
 
@@ -101,39 +97,19 @@ See [EVALUATION.md](EVALUATION.md) for the benchmark plan and [CONTRIBUTING.md](
 
 ---
 
-## Try it free — no installation
+## Self-hosted vs hosted
 
-Not ready to self-host? **OpenPaper.dev** is the hosted version of OpenDraft — free to generate and read, pay only to export:
+OpenDraft is the open-source engine you run yourself. The same engine also powers a separate managed commercial service, [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft), for users who prefer not to run their own infrastructure. The table below documents the boundary neutrally.
 
-- ✅ **Generate & read research papers with verified citations — free**
-- ✅ Searches CrossRef, OpenAlex, Semantic Scholar, and arXiv
-- ✅ **Read-only share links** to send your draft
-- ✅ No API keys, no setup, no credit card to start
-- ✅ Export the finished file (**PDF / Word / LaTeX**) on a paid plan
-
-<p align="center">
-  <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft"><img src="https://img.shields.io/badge/Try%20Free%20on-OpenPaper.dev-6366f1?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Try OpenPaper.dev for free"></a>
-</p>
-
-### Self-hosted (OpenDraft) vs Hosted (OpenPaper)
-
-Same engine, two ways to run it. Self-host for full control, or use the hosted version to skip the setup entirely.
-
-| | **Self-hosted (OpenDraft)** | **Hosted ([OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft))** |
+| | **Self-hosted (OpenDraft, this repo)** | **Hosted (OpenPaper.dev)** |
 |---|---|---|
-| **Setup** | Clone, install Python deps, configure `.env` (~10 min) | None — open the site and start writing |
-| **API keys** | You bring your own (Gemini / OpenAI / Anthropic) | Included — nothing to manage |
-| **Infra** | You run it locally or on your own server | Fully hosted in your browser |
+| **Setup** | Clone, install Python deps, configure `.env` (~10 min) | None — runs in the browser |
+| **Model API keys** | You bring your own (Gemini / OpenAI / Anthropic) | Managed by the service |
+| **Infra** | Local machine or your own server | Managed by the service |
 | **Sources** | CrossRef, OpenAlex, Semantic Scholar, arXiv | CrossRef, OpenAlex, Semantic Scholar, arXiv |
 | **Export** | PDF, Word (.docx), LaTeX | PDF, Word (.docx), LaTeX |
-| **Support** | Community (GitHub issues) | Maintained service, email support |
-| **Price** | Free (MIT) + your own API costs (~$0.35–$3 per draft) | Free to generate & read with verified citations · pay only to export (PDF/Word/LaTeX) |
-| **Best for** | Developers, tinkerers, custom pipelines, full control | Researchers who just want the draft, no setup |
-
-<p align="center">
-  <b>Just want the draft without the setup?</b>
-  <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft"><strong>Start free on OpenPaper.dev →</strong></a>
-</p>
+| **License / cost** | MIT, free; you pay your own model API costs (~$0.35–$3 per draft) | Commercial service (separate terms) |
+| **Best for** | Developers, custom pipelines, full control | Researchers who prefer a managed option |
 
 ---
 
@@ -189,7 +165,6 @@ It is a research assistance and drafting tool, not an autonomous author.
 | Export to PDF/Word? | No | **Yes** |
 | Free? | Limited | **100% free (self-host)** |
 | Open source? | No | **Yes (MIT license)** |
-| Hosted SaaS? | ChatGPT Plus $20/mo | **OpenPaper.dev — free to generate & read** |
 
 **Bottom line:** If you need an AI for academic writing with real citations, OpenDraft is a free, open-source alternative to ChatGPT.
 
@@ -463,9 +438,7 @@ See `engine/README.md` for detailed API documentation.
 
 See what OpenDraft produces:
 
-📄 **[Download Sample PDF](https://openpaper.dev/examples/genai-software-engineering?utm_source=github&utm_medium=readme&utm_campaign=opendraft)** — view a live example with verified citations
-
-📝 **Try the free hosted version:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
+📄 **[Sample PDF](https://openpaper.dev/examples/genai-software-engineering?utm_source=github&utm_medium=readme&utm_campaign=opendraft)** — a live example draft with verified citations.
 
 Generated in ~15 minutes with verified citations from real academic papers.
 
@@ -491,7 +464,7 @@ opendraft/
 ## People Also Ask
 
 ### Is OpenDraft free?
-**Yes.** OpenDraft is 100% free and open source under the MIT license. You can self-host it with your own API keys (a typical draft costs ~$0.35–$3 in API fees). There is also a hosted version at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) where generating and reading fully-cited papers is free (no credit card); you pay only to export the finished file (PDF, Word, or LaTeX).
+**Yes.** OpenDraft is 100% free and open source under the MIT license. You self-host it with your own model API keys (a typical draft costs ~$0.35–$3 in API fees). A separate managed commercial version runs the same engine at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft).
 
 ### Is OpenDraft better than ChatGPT for writing a thesis?
 **Yes, for research drafts.** ChatGPT frequently hallucinates citations and cannot produce documents longer than a few thousand words. OpenDraft generates 20,000+ word research drafts with every citation verified against real academic databases.
@@ -520,9 +493,7 @@ opendraft/
 
 ### Is this really free?
 
-**Yes.** OpenDraft is 100% open source under the MIT license. Self-host with your own API keys. A typical research draft costs ~$0.35-$3 depending on the model.
-
-You can also use the hosted version at **[OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)** — free to generate and read with verified citations (no credit card); pay only to export.
+**Yes.** OpenDraft is 100% open source under the MIT license. Self-host with your own API keys. A typical research draft costs ~$0.35-$3 depending on the model. A separate managed commercial version is available at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft).
 
 ### Is this better than ChatGPT for academic writing?
 
@@ -547,12 +518,12 @@ Most AI tools use a single model. OpenDraft uses **19 specialized agents**—one
 
 ## Alternatives Comparison (2025)
 
-| Tool | Price | Open Source | Verified Citations | Long Documents | Hosted Free Tier |
-|------|-------|-------------|-------------------|----------------|------------------|
-| **OpenDraft** | Free | ✅ Yes | ✅ Yes | ✅ Yes | ✅ OpenPaper.dev (free to generate & read) |
-| ChatGPT Plus | $20/mo | ❌ No | ❌ No | ❌ No | ❌ No |
-| Jasper | $49/mo | ❌ No | ❌ No | ✅ Yes | ❌ No |
-| Jenni AI | $20/mo | ❌ No | ⚠️ Partial | ✅ Yes | ❌ No |
+| Tool | Price | Open Source | Verified Citations | Long Documents |
+|------|-------|-------------|-------------------|----------------|
+| **OpenDraft** | Free (MIT) | ✅ Yes | ✅ Yes | ✅ Yes |
+| ChatGPT Plus | $20/mo | ❌ No | ❌ No | ❌ No |
+| Jasper | $49/mo | ❌ No | ❌ No | ✅ Yes |
+| Jenni AI | $20/mo | ❌ No | ⚠️ Partial | ✅ Yes |
 
 **OpenDraft is a free, open-source research draft generator with verified citations.**
 
@@ -585,8 +556,7 @@ Maintainer workflow docs:
 
 ## Links
 
-- 🌐 **Website:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
-- 🚀 **Free Hosted Version:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
+- 🌐 **Hosted version (commercial):** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
 - 💬 **Discussions:** [GitHub Discussions](https://github.com/federicodeponte/opendraft/discussions)
 - 🐛 **Issues:** [Report Bug](https://github.com/federicodeponte/opendraft/issues)
 - 🗒️ **Changelog:** [CHANGELOG.md](CHANGELOG.md)
