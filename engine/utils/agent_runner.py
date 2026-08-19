@@ -643,8 +643,14 @@ def research_citations_via_api(
        - Creates 50+ systematic queries from topic + scope + seed references
        - Best for comprehensive literature reviews (dissertations, draft)
 
-    API Fallback Chain:
-    Crossref → Semantic Scholar → Gemini Grounded → Gemini LLM (95%+ success rate)
+    Citation sourcing (see CitationResearcher for the full contract):
+      Discovery   Crossref / OpenAlex / Semantic Scholar / Gemini Grounded.
+                  Any one source can answer; this proves nothing on its own.
+      Confirmation Each candidate's DOI is looked up in Crossref, OpenAlex and
+                  Semantic Scholar. By default a candidate is kept only if 2+
+                  of them hold it, so fewer citations survive than are found.
+                  Budget research_topics accordingly when setting
+                  target_minimum.
 
     Args:
         model: Configured Gemini model instance (used for planning and LLM fallback)

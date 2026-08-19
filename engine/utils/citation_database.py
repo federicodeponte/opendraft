@@ -156,7 +156,26 @@ class Citation:
         law_report: Optional[str] = None,
         parties: Optional[str] = None,
         section: Optional[str] = None,
+        verification_status: Optional[str] = None,
+        verification_sources: Optional[List[str]] = None,
+        verification_notes: Optional[str] = None,
+        verification_independent_sources: Optional[List[str]] = None,
+        verification_unreachable_sources: Optional[List[str]] = None,
     ):
+        """
+        Args (verification fields only; see utils.api_citations.multi_source):
+            verification_status: How this citation was established. One of the
+                VERIFICATION_* values in utils.api_citations.multi_source.
+                None means verification never ran for this record.
+            verification_sources: Scholarly databases that hold this DOI. Empty
+                for web sources and for LLM-asserted citations.
+            verification_notes: Plain-language account of what was checked.
+
+        These three fields exist so a reader of bibliography.json can tell a
+        database-confirmed citation from an unconfirmed one. An LLM-asserted
+        citation must never look identical to a confirmed one. A record with no
+        verification_status predates the feature and was never checked by it.
+        """
         self.id = citation_id
         self.authors = authors
         self.year = year
@@ -178,6 +197,11 @@ class Citation:
         self.law_report = law_report
         self.parties = parties
         self.section = section
+        self.verification_status = verification_status
+        self.verification_sources = verification_sources or []
+        self.verification_notes = verification_notes
+        self.verification_independent_sources = verification_independent_sources or []
+        self.verification_unreachable_sources = verification_unreachable_sources or []
 
     def to_dict(self) -> Dict:
         """Convert to dictionary for JSON serialization."""
@@ -222,6 +246,28 @@ class Citation:
         if self.section:
             data["section"] = self.section
 
+        # Verification provenance.
+        #
+        # Emitted as a block whenever verification ran at all, and
+        # verification_sources is written even when EMPTY. An empty list is the
+        # meaningful statement "zero scholarly databases confirmed this". If it
+        # were dropped like the other falsy fields, an unconfirmed citation
+        # would serialize identically to a confirmed one, which is exactly the
+        # confusion these fields exist to prevent.
+        if self.verification_status:
+            data["verification_status"] = self.verification_status
+            data["verification_sources"] = list(self.verification_sources)
+            # Also emitted empty: the subset this run actually re-queried, as
+            # opposed to taking the finding database at its word.
+            data["verification_independent_sources"] = list(self.verification_independent_sources)
+            if self.verification_unreachable_sources:
+                # Present only when something went wrong. Its presence means the
+                # verdict is provisional: those databases said nothing at all,
+                # which is not the same as saying the work is absent.
+                data["verification_unreachable_sources"] = list(self.verification_unreachable_sources)
+            if self.verification_notes:
+                data["verification_notes"] = self.verification_notes
+
         return data
 
     @staticmethod
@@ -249,6 +295,11 @@ class Citation:
             law_report=data.get("law_report"),
             parties=data.get("parties"),
             section=data.get("section"),
+            verification_status=data.get("verification_status"),
+            verification_sources=data.get("verification_sources"),
+            verification_notes=data.get("verification_notes"),
+            verification_independent_sources=data.get("verification_independent_sources"),
+            verification_unreachable_sources=data.get("verification_unreachable_sources"),
         )
 
 

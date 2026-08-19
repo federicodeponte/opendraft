@@ -93,6 +93,26 @@ class ValidationConfig:
         default_factory=lambda: os.getenv('ENABLE_FACTCHECK', 'true').lower() == 'true'
     )
 
+    # --- Claim-level citation verification (utils.citation_claim_verifier) ---
+    # Judges whether each citation is topically relevant to the claim it is
+    # attached to. Distinct from multi-source DOI confirmation, which only
+    # establishes that a cited work is real.
+    enable_claim_verification: bool = field(
+        default_factory=lambda: os.getenv('ENABLE_CLAIM_VERIFICATION', 'true').lower() == 'true'
+    )
+    # Whether a citation judged IRRELEVANT is removed from the database rather
+    # than only reported. On by default: leaving a known-irrelevant source in
+    # the pool means a writing agent can still cite it.
+    claim_verification_drop_irrelevant: bool = field(
+        default_factory=lambda: os.getenv('CLAIM_VERIFICATION_DROP_IRRELEVANT', 'true').lower() == 'true'
+    )
+    # Minimum judge confidence before an IRRELEVANT verdict removes a citation.
+    # A low-confidence verdict is reported but not acted on, because the judge
+    # is a language model and a wrong removal silently shrinks the bibliography.
+    claim_verification_min_confidence: float = field(
+        default_factory=lambda: float(os.getenv('CLAIM_VERIFICATION_MIN_CONFIDENCE', '0.7'))
+    )
+
     def get_validation_model(self, base_model: str) -> str:
         """Return appropriate model for validation tasks."""
         return self.pro_model_name if self.use_pro_model else base_model
