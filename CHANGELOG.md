@@ -4,6 +4,8 @@ All notable changes are documented in this file.
 
 ## Unreleased
 
+## 1.8.0 - 2026-08-22
+
 ### Added
 - **Claim-level citation verification** (`engine/utils/citation_claim_verifier.py`).
   Judges whether a citation is topically relevant to the claim it is attached
