@@ -16,6 +16,9 @@ markdown>=3.5.0             # Markdown parsing
 weasyprint>=60.0            # PDF generation (no LaTeX needed!)
 python-docx>=1.0.0          # Word document generation
 
+# === Search ===
+tavily-python>=0.5.0        # Tavily AI-optimized web search (optional, needs TAVILY_API_KEY)
+
 # === HTTP Client & Web Scraping ===
 requests>=2.31.0            # For CrossRef API, GPTZero API, web scraping
 beautifulsoup4>=4.12.0      # HTML parsing for title/metadata scraping

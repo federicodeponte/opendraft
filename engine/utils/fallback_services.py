@@ -58,8 +58,44 @@ def with_retry_sync(func, max_retries=3, base_delay=0.5):
 
 
 # ==============================================================================
-# Serper.dev Web Search (Preferred)
+# Web Search (Tavily preferred, Serper fallback)
 # ==============================================================================
+
+def search_web_tavily(
+    query: str,
+    num_results: int = 5,
+) -> Dict[str, Any]:
+    """
+    Search the web using Tavily AI-optimized Search API.
+
+    Args:
+        query: Search query string
+        num_results: Number of results to return (default 5)
+
+    Returns:
+        Dict with 'success', 'results' (list of search results), and 'error' if failed
+
+    Environment Variables Required:
+        TAVILY_API_KEY: Tavily API key
+    """
+    try:
+        from utils.api_citations.tavily_client import TavilySearchClient
+
+        client = TavilySearchClient(num_results=num_results)
+        result = client.search_paper(query)
+
+        if result:
+            return {
+                "success": True,
+                "results": [result],
+                "query": query
+            }
+        return {"success": False, "error": "No results found", "results": []}
+
+    except Exception as e:
+        logger.warning(f"Tavily search failed: {e}")
+        return {"success": False, "error": str(e), "results": []}
+
 
 def search_web_serper(
     query: str,
@@ -69,6 +105,7 @@ def search_web_serper(
     Search the web using Serper.dev Google Search API.
 
     Preferred over DataForSEO for better pricing and speed.
+    Tries Tavily first when TAVILY_API_KEY is set, retaining Serper as secondary fallback.
 
     Args:
         query: Search query string
@@ -79,7 +116,16 @@ def search_web_serper(
 
     Environment Variables Required:
         SERPER_API_KEY: Serper.dev API key
+        TAVILY_API_KEY: (Optional) Tavily API key — tried first when present
     """
+    # Try Tavily first when configured
+    if os.environ.get("TAVILY_API_KEY"):
+        logger.info("[search_web] Using Tavily as preferred web search provider")
+        tavily_result = search_web_tavily(query, num_results)
+        if tavily_result.get("success"):
+            return tavily_result
+        logger.warning("[search_web] Tavily returned no results, falling back to Serper")
+
     try:
         from utils.api_citations.serper_client import SerperClient
 

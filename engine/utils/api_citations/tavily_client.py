@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """
-ABOUTME: Serper.dev API client for web search with citation extraction
-ABOUTME: Drop-in replacement for GeminiGroundedClient using Serper's Google Search API
+ABOUTME: Tavily Search API client for web search with citation extraction
+ABOUTME: Parallel search option alongside Serper using Tavily's AI-optimized search API
 """
 
 import os
 import re
 import logging
 from typing import Optional, Dict, Any, List
-from urllib.parse import urlparse
 
 import requests
+
+try:
+    from tavily import TavilyClient as _TavilyClient
+except ImportError:
+    _TavilyClient = None
 
 try:
     from dotenv import load_dotenv
@@ -18,38 +22,28 @@ except ImportError:
     load_dotenv = None
 
 from .base import BaseAPIClient, validate_author_name, validate_publication_year
-from .web_search_mixin import (
-    WebSearchMixin,
-    is_trusted_domain,
-    is_blocked_domain,
-    extract_year_from_url,
-    TRUSTED_INDUSTRY_DOMAINS,
-    BLOCKED_DOMAINS,
-)
+from .web_search_mixin import WebSearchMixin
 
 logger = logging.getLogger(__name__)
 
 
-class SerperClient(WebSearchMixin, BaseAPIClient):
+class TavilySearchClient(WebSearchMixin, BaseAPIClient):
     """
-    Serper.dev API client for web search with citation support.
+    Tavily Search API client for web search with citation support.
 
-    Uses Serper's Google Search API to find credible sources, then validates
+    Uses Tavily's AI-optimized search API to find credible sources, then validates
     and enriches results with metadata from CrossRef/PubMed when available.
 
     Features:
-    - Google Search via Serper API (faster, cheaper than direct Google API)
+    - AI-optimized search via Tavily API (relevance-scored results)
     - Domain filtering (blocks blogs, social media, etc.)
     - Academic URL detection and metadata enrichment
     - DOI extraction and CrossRef lookup
-    - Rate limiting and retries
 
     Requirements:
-    - requests
-    - SERPER_API_KEY environment variable
+    - tavily-python
+    - TAVILY_API_KEY environment variable
     """
-
-    SERPER_API_URL = "https://google.serper.dev/search"
 
     def __init__(
         self,
@@ -60,37 +54,45 @@ class SerperClient(WebSearchMixin, BaseAPIClient):
         validate_urls: bool = True,
     ):
         """
-        Initialize Serper client.
+        Initialize Tavily client.
 
         Args:
-            api_key: Serper API key (defaults to SERPER_API_KEY env var)
+            api_key: Tavily API key (defaults to TAVILY_API_KEY env var)
             timeout: Request timeout in seconds
             max_retries: Number of retry attempts
             num_results: Number of search results to request
             validate_urls: Whether to validate URLs return HTTP 200
         """
+        if _TavilyClient is None:
+            raise ImportError(
+                "tavily-python is required. Install with: pip install tavily-python"
+            )
+
         if load_dotenv is not None:
             load_dotenv()
 
-        self.serper_api_key = api_key or os.getenv('SERPER_API_KEY')
+        self.tavily_api_key = api_key or os.getenv('TAVILY_API_KEY')
 
-        if not self.serper_api_key:
+        if not self.tavily_api_key:
             raise ValueError(
-                "SERPER_API_KEY not found. Set via environment variable or constructor."
+                "TAVILY_API_KEY not found. Set via environment variable or constructor."
             )
 
         super().__init__(
-            base_url=self.SERPER_API_URL,
-            api_key=self.serper_api_key,
+            base_url="https://api.tavily.com",
+            api_key=self.tavily_api_key,
             timeout=timeout,
             max_retries=max_retries,
-            api_type='serper',
+            api_type='tavily',
         )
 
         self.num_results = num_results
         self.validate_urls = validate_urls
 
-        # Session for URL validation
+        # Initialize Tavily client
+        self.tavily_client = _TavilyClient(api_key=self.tavily_api_key)
+
+        # Session for URL validation and metadata enrichment
         self.validation_session = requests.Session()
         self.validation_session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
@@ -99,7 +101,7 @@ class SerperClient(WebSearchMixin, BaseAPIClient):
 
     def search_paper(self, query: str) -> Optional[Dict[str, Any]]:
         """
-        Search for a credible source using Serper Google Search API.
+        Search for a credible source using Tavily Search API.
 
         Args:
             query: Search query (topic, title, keywords)
@@ -116,8 +118,7 @@ class SerperClient(WebSearchMixin, BaseAPIClient):
             Returns None if no valid source found.
         """
         try:
-            # Search via Serper
-            results = self._search_serper(query)
+            results = self._search_tavily(query)
 
             if not results:
                 return None
@@ -131,12 +132,12 @@ class SerperClient(WebSearchMixin, BaseAPIClient):
             return None
 
         except Exception as e:
-            logger.error(f"Serper search error: {e}")
+            logger.error(f"Tavily search error: {e}")
             return None
 
-    def _search_serper(self, query: str) -> List[Dict[str, Any]]:
+    def _search_tavily(self, query: str) -> List[Dict[str, Any]]:
         """
-        Execute search via Serper API.
+        Execute search via Tavily API.
 
         Args:
             query: Search query
@@ -144,50 +145,30 @@ class SerperClient(WebSearchMixin, BaseAPIClient):
         Returns:
             List of raw search result dicts
         """
-        headers = {
-            'X-API-KEY': self.serper_api_key,
-            'Content-Type': 'application/json',
-        }
-
-        payload = {
-            'q': query,
-            'num': self.num_results,
-        }
-
         try:
-            response = self.session.post(
-                self.SERPER_API_URL,
-                headers=headers,
-                json=payload,
-                timeout=self.timeout,
+            response = self.tavily_client.search(
+                query=query,
+                max_results=self.num_results,
+                search_depth="advanced",
             )
 
-            if not response.ok:
-                logger.warning(f"Serper API error {response.status_code}: {response.text[:200]}")
-                return []
-
-            data = response.json()
-
-            # Extract organic results
-            organic = data.get('organic', [])
+            tavily_results = response.get('results', [])
 
             results = []
-            for item in organic:
+            for idx, item in enumerate(tavily_results):
                 results.append({
                     'title': item.get('title', ''),
-                    'url': item.get('link', ''),
-                    'snippet': item.get('snippet', ''),
-                    'position': item.get('position', 0),
+                    'url': item.get('url', ''),
+                    'snippet': item.get('content', ''),
+                    'position': idx + 1,
+                    'score': item.get('score', 0),
                 })
 
-            logger.info(f"Serper: Found {len(results)} results for: {query[:50]}...")
+            logger.info(f"Tavily: Found {len(results)} results for: {query[:50]}...")
             return results
 
-        except requests.exceptions.Timeout:
-            logger.warning(f"Serper timeout for query: {query[:50]}...")
-            return []
         except Exception as e:
-            logger.error(f"Serper request error: {e}")
+            logger.error(f"Tavily request error: {e}")
             return []
 
     def close(self) -> None:
@@ -198,9 +179,9 @@ class SerperClient(WebSearchMixin, BaseAPIClient):
 
 
 # Convenience function matching existing interface
-def search_with_serper(query: str, num_results: int = 10) -> Optional[Dict[str, Any]]:
+def search_with_tavily(query: str, num_results: int = 10) -> Optional[Dict[str, Any]]:
     """
-    Search for a credible source using Serper.
+    Search for a credible source using Tavily.
 
     Args:
         query: Search query
@@ -210,8 +191,8 @@ def search_with_serper(query: str, num_results: int = 10) -> Optional[Dict[str, 
         Source metadata dict or None
     """
     try:
-        client = SerperClient(num_results=num_results)
+        client = TavilySearchClient(num_results=num_results)
         return client.search_paper(query)
     except Exception as e:
-        logger.error(f"Serper search error: {e}")
+        logger.error(f"Tavily search error: {e}")
         return None
