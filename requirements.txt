@@ -20,7 +20,7 @@ python-docx>=1.0.0,<2.0.0   # Word document generation
 # === HTTP Client & Web Scraping ===
 requests>=2.31.0,<3.0.0     # For CrossRef API, GPTZero API, web scraping
 beautifulsoup4>=4.12.0,<5.0.0  # HTML parsing for title/metadata scraping
-lxml>=4.9.0,<6.0.0          # Fast XML/HTML parser for BeautifulSoup
+lxml>=4.9.0,<7.0.0          # Fast XML/HTML parser for BeautifulSoup
 
 # === Utilities ===
 python-dotenv>=1.0.0,<2.0.0 # Load .env files
