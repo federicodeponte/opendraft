@@ -48,3 +48,11 @@ jobs:
           python -m pytest tests/test_factcheck_live.py -q -m integration
           python tests/test_live_crafter.py
           python tests/audit_output.py
+
+      - name: Citation Accuracy Regression Eval
+        if: steps.secret_check.outputs.has_key == 'true'
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python scripts/eval_regression.py
