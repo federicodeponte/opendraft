@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <sub>A hosted, managed version of this engine runs at <a href="https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft">OpenPaper.dev</a> (commercial service). This repository is the open-source engine, MIT-licensed and self-hostable.</sub>
+  <sub>This repository is the open-source engine, MIT-licensed and self-hostable.</sub>
 </p>
 
 <p align="center">
@@ -37,7 +37,7 @@
 | **Sources** | CrossRef, OpenAlex, Semantic Scholar (200M+) |
 | **Languages** | 57+ languages including English, Spanish, German, French, Chinese, Japanese |
 | **Export** | PDF, Microsoft Word (.docx), LaTeX |
-| **Cost** | Free and open source (MIT license); you bring your own model API keys. A hosted commercial version is available separately. |
+| **Cost** | Free and open source (MIT license); you bring your own model API keys. |
 | **Typical output** | 5–80+ pages, 10k–20k+ words, 30–50+ citations ([measured before multi-source confirmation was made the default](#citation-verification)) |
 | **Time to draft** | 10–20 minutes |
 | **API cost per draft** | ~$0.35 (Gemini Flash) to ~$3.00 (Claude Opus) |
@@ -48,20 +48,16 @@
 
 - [At a Glance](#at-a-glance)
 - [What is OpenDraft?](#what-is-opendraft)
-- [Self-hosted vs hosted](#self-hosted-vs-hosted)
 - [Why OpenDraft Exists](#why-opendraft-exists)
 - [OpenDraft for Open Source Maintainers](#opendraft-for-open-source-maintainers)
 - [What OpenDraft is NOT](#what-opendraft-is-not)
-- [OpenDraft vs ChatGPT](#opendraft-vs-chatgpt)
 - [How It Works](#how-it-works)
 - [Citation verification](#citation-verification)
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Which AI Model Should I Use?](#which-ai-model-should-i-use)
 - [Example Output](#example-output)
-- [People Also Ask](#people-also-ask)
 - [FAQ](#faq)
-- [Alternatives Comparison](#alternatives-comparison-2025)
 - [Tech Stack](#tech-stack)
 - [Contributing](#contributing)
 - [Links](#links)
@@ -72,13 +68,12 @@
 
 **OpenDraft is an open-source Python engine that generates source-grounded research drafts using 19 specialized AI agents.** It is designed for academic researchers who need long-form documents (10,000–20,000+ words) with citations verified against real databases.
 
-Unlike general-purpose chatbots such as ChatGPT, OpenDraft does not invent its citations. By default a source is only included once its DOI is held by at least **two** of CrossRef, OpenAlex and Semantic Scholar, and every citation records which databases confirmed it and which ones this engine re-queried itself. See [Citation verification](#citation-verification) for exactly what that does and does not establish.
+OpenDraft does not invent its citations. By default a source is only included once its DOI is held by at least **two** of CrossRef, OpenAlex and Semantic Scholar, and every citation records which databases confirmed it and which ones this engine re-queried itself. See [Citation verification](#citation-verification) for exactly what that does and does not establish.
 
 - **OpenDraft is** a command-line tool and Python library for drafting academic papers.
 - **Best for:** Researchers drafting literature reviews, journal submissions, structured research papers, and thesis first drafts.
 - **License:** 100% free and open source (MIT).
 - **Setup time:** ~10 minutes for local installation.
-- **Hosted option:** a managed commercial version runs the same engine at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft), for those who prefer not to self-host.
 
 ---
 
@@ -98,22 +93,6 @@ See [EVALUATION.md](EVALUATION.md) for the benchmark plan and [CONTRIBUTING.md](
 
 ---
 
-## Self-hosted vs hosted
-
-OpenDraft is the open-source engine you run yourself. The same engine also powers a separate managed commercial service, [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft), for users who prefer not to run their own infrastructure. The table below documents the boundary neutrally.
-
-| | **Self-hosted (OpenDraft, this repo)** | **Hosted (OpenPaper.dev)** |
-|---|---|---|
-| **Setup** | Clone, install Python deps, configure `.env` (~10 min) | None — runs in the browser |
-| **Model API keys** | You bring your own (Gemini / OpenAI / Anthropic) | Managed by the service |
-| **Infra** | Local machine or your own server | Managed by the service |
-| **Sources** | CrossRef, OpenAlex, Semantic Scholar | CrossRef, OpenAlex, Semantic Scholar |
-| **Export** | PDF, Word (.docx), LaTeX | PDF, Word (.docx), LaTeX |
-| **License / cost** | MIT, free; you pay your own model API costs (~$0.35–$3 per draft) | Commercial service (separate terms) |
-| **Best for** | Developers, custom pipelines, full control | Researchers who prefer a managed option |
-
----
-
 ## Why OpenDraft Exists
 
 We built OpenDraft after repeatedly encountering AI writing tools that produced confident-sounding research drafts with hallucinated or unverifiable citations.
@@ -126,11 +105,11 @@ We open-sourced OpenDraft so researchers can inspect, critique, and improve how 
 
 ### What Problem Does OpenDraft Solve?
 
-1. **Hallucinated citations** — ChatGPT and similar LLMs invent citations 30–50% of the time. OpenDraft confirms each source's DOI against multiple scholarly databases and drops the ones it cannot confirm.
-2. **Length limits** — Most AI tools cannot produce documents longer than a few thousand words. OpenDraft generates 20,000+ word research drafts.
-3. **Generic structure** — ChatGPT outputs lack proper academic chapter/section hierarchy. OpenDraft builds structured research outlines.
-4. **No export options** — ChatGPT cannot export to PDF or Word with academic formatting. OpenDraft exports to PDF, DOCX, and LaTeX.
-5. **Closed source** — Most academic AI tools are black boxes. OpenDraft is fully open source under the MIT license.
+1. **Citation confidence** — OpenDraft confirms each source's DOI against multiple scholarly databases and drops the ones it cannot confirm, rather than accepting model-asserted references.
+2. **Long-form output** — OpenDraft generates 20,000+ word research drafts.
+3. **Academic structure** — OpenDraft builds structured research outlines with proper chapter/section hierarchy.
+4. **Export formats** — OpenDraft exports to PDF, DOCX, and LaTeX with academic formatting.
+5. **Open source** — OpenDraft is fully open source under the MIT license and can be inspected and extended.
 
 ### Who Is OpenDraft For?
 
@@ -155,22 +134,6 @@ It is a research assistance and drafting tool, not an autonomous author.
 
 ---
 
-## OpenDraft vs ChatGPT
-
-| Question | ChatGPT | OpenDraft |
-|----------|---------|-----------|
-| Does it hallucinate citations? | Yes (often) | **Verified against real databases** |
-| Can it write 20,000+ words? | No (hits limits) | **Yes** |
-| Does it search real papers? | No | **Yes (CrossRef, OpenAlex, Semantic Scholar)** |
-| Academic structure? | Generic | **Chapters & sections** |
-| Export to PDF/Word? | No | **Yes** |
-| Free? | Limited | **100% free (self-host)** |
-| Open source? | No | **Yes (MIT license)** |
-
-**Bottom line:** If you need an AI for academic writing with real citations, OpenDraft is a free, open-source alternative to ChatGPT.
-
----
-
 ## How It Works
 
 OpenDraft uses **19 specialized AI agents** that work like a research team:
@@ -187,7 +150,7 @@ OpenDraft uses **19 specialized AI agents** that work like a research team:
 📄 EXPORT PHASE      → Generates PDF, Word, or LaTeX
 ```
 
-**Result:** A complete research draft in 10-20 minutes instead of weeks.
+**Result:** A complete research draft in 10-20 minutes.
 
 ---
 
@@ -299,7 +262,7 @@ Neither check removes the need to read the draft. See
 
 ## Features
 
-### AI That Doesn't Make Up Citations
+### Citations confirmed against real databases
 By default a citation is kept only if its DOI is held by at least two of CrossRef, OpenAlex and Semantic Scholar. A source only one database knows about is dropped, not quietly accepted. Every citation in `bibliography.json` carries the list of databases that confirmed it, so an unconfirmed source can never look like a confirmed one. See [Citation verification](#citation-verification).
 
 ### Write Any Type of Academic Paper
@@ -317,7 +280,7 @@ English, Spanish, German, French, Chinese, Japanese, Korean, Arabic, Portuguese,
 - **LaTeX source** - for journals
 
 ### 100% Free and Open Source
-MIT license. Self-host with your own API keys. No subscriptions, no paywalls, no limits.
+MIT license. Self-host with your own API keys.
 
 ### TL;DR and Digest Tools
 OpenDraft includes two standalone tools for quickly understanding any research paper:
@@ -548,7 +511,7 @@ See `engine/README.md` for detailed API documentation.
 
 See what OpenDraft produces:
 
-📄 **[Sample PDF](https://openpaper.dev/examples/genai-software-engineering?utm_source=github&utm_medium=readme&utm_campaign=opendraft)** — a live example draft with verified citations.
+Sample drafts with their verified bibliographies are in the [`examples/`](examples/) directory.
 
 Generated in ~15 minutes with verified citations from real academic papers.
 
@@ -571,22 +534,19 @@ opendraft/
 
 ---
 
-## People Also Ask
+## Common Questions
 
 ### Is OpenDraft free?
-**Yes.** OpenDraft is 100% free and open source under the MIT license. You self-host it with your own model API keys (a typical draft costs ~$0.35–$3 in API fees). A separate managed commercial version runs the same engine at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft).
+**Yes.** OpenDraft is 100% free and open source under the MIT license. You self-host it with your own model API keys (a typical draft costs ~$0.35–$3 in API fees).
 
-### Is OpenDraft better than ChatGPT for writing a thesis?
-**Yes, for research drafts.** ChatGPT frequently hallucinates citations and cannot produce documents longer than a few thousand words. OpenDraft generates 20,000+ word research drafts with every citation verified against real academic databases.
+### How does OpenDraft handle citations?
+OpenDraft confirms each citation's DOI against at least two of CrossRef, OpenAlex and Semantic Scholar and drops the ones it cannot confirm. See [Citation verification](#citation-verification) for exactly what that establishes.
 
 ### Can OpenDraft write a full PhD dissertation?
 **OpenDraft can generate a complete first draft** of a PhD dissertation (100+ pages) in 10–20 minutes. However, it is a drafting assistant, not an autonomous author. You must review, edit, and add your own analysis before submission.
 
 ### Does OpenDraft make up citations?
 **Citations are not invented, and the engine records exactly how each one was established.** By default a citation must have its DOI held by at least two of CrossRef, OpenAlex and Semantic Scholar; single-source results are dropped. One of the two may be the database that returned the candidate, which is taken at its word rather than re-queried; `verification_independent_sources` records the ones actually re-queried. The LLM-asserted fallback is off by default and, if you switch it on, everything it produces is permanently tagged `llm_unverified`. Note what this proves: that the cited work is registered and indexed, not that it supports the sentence it is attached to. A separate claim-level check covers that, and its verdicts are LLM judgements for a human reviewer. See [Citation verification](#citation-verification).
-
-### What is the difference between OpenDraft and OpenPaper?
-**OpenDraft** is the open-source Python engine you run locally. **OpenPaper** is the hosted SaaS version that runs OpenDraft in the cloud so you can use it in your browser without installing anything.
 
 ### How long does it take to generate a thesis with OpenDraft?
 **10–20 minutes** for a full master's thesis (50–80 pages). A shorter research paper takes 5–10 minutes.
@@ -603,11 +563,11 @@ opendraft/
 
 ### Is this really free?
 
-**Yes.** OpenDraft is 100% open source under the MIT license. Self-host with your own API keys. A typical research draft costs ~$0.35-$3 depending on the model. A separate managed commercial version is available at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft).
+**Yes.** OpenDraft is 100% open source under the MIT license. Self-host with your own API keys. A typical research draft costs ~$0.35-$3 depending on the model.
 
-### Is this better than ChatGPT for academic writing?
+### How are citations verified?
 
-**For research drafts, yes.** ChatGPT often hallucinates citations. OpenDraft confirms each citation's DOI in at least two of CrossRef, OpenAlex and Semantic Scholar before keeping it.
+OpenDraft confirms each citation's DOI in at least two of CrossRef, OpenAlex and Semantic Scholar before keeping it, and drops single-source or unconfirmed results.
 
 ### Can I use this for my university thesis?
 
@@ -616,26 +576,13 @@ OpenDraft generates **research drafts**—starting points you should review, edi
 - Add your own analysis and insights
 - Check your institution's AI policy
 
-### How is this different from other AI writing tools?
+### Why a multi-agent architecture?
 
-Most AI tools use a single model. OpenDraft uses **19 specialized agents**—one for research, one for citations, one for structure, etc. This produces higher quality output.
+OpenDraft uses **19 specialized agents**—one for research, one for citations, one for structure, one for export, etc.—instead of a single general-purpose prompt.
 
 ### Can I use this commercially?
 
 **Yes.** MIT license allows commercial use. Build products, offer services, modify the code—no restrictions.
-
----
-
-## Alternatives Comparison (2025)
-
-| Tool | Price | Open Source | Verified Citations | Long Documents |
-|------|-------|-------------|-------------------|----------------|
-| **OpenDraft** | Free (MIT) | ✅ Yes | ✅ Yes | ✅ Yes |
-| ChatGPT Plus | $20/mo | ❌ No | ❌ No | ❌ No |
-| Jasper | $49/mo | ❌ No | ❌ No | ✅ Yes |
-| Jenni AI | $20/mo | ❌ No | ⚠️ Partial | ✅ Yes |
-
-**OpenDraft is a free, open-source research draft generator with verified citations.**
 
 ---
 
@@ -666,7 +613,7 @@ Maintainer workflow docs:
 
 ## Links
 
-- 🌐 **Hosted version (commercial):** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
+- 🌐 **Hosted version:** [openpaper.dev](https://openpaper.dev)
 - 💬 **Discussions:** [GitHub Discussions](https://github.com/federicodeponte/opendraft/discussions)
 - 🐛 **Issues:** [Report Bug](https://github.com/federicodeponte/opendraft/issues)
 - 🗒️ **Changelog:** [CHANGELOG.md](CHANGELOG.md)
@@ -677,8 +624,6 @@ Maintainer workflow docs:
 ## Summary
 
 **OpenDraft** is a free, open-source Python engine for generating academic research drafts. It uses 19 specialized AI agents to create drafts whose citations are confirmed against real databases (CrossRef, OpenAlex, Semantic Scholar).
-
-**Keywords:** AI research draft generator, open source academic writing, ChatGPT alternative, multi-agent AI, verified citations, Python research engine, literature review generator, OpenPaper, source-grounded citations, academic workflow automation
 
 ---
 
