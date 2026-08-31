@@ -8,7 +8,6 @@
 - **Engine**: 19 specialized agents — research, structure, writing, citation checking, polish, export
 - **Sources**: Crossref, OpenAlex, Semantic Scholar, and web search
 - **Export**: PDF, Microsoft Word (.docx), LaTeX source
-- **Output**: 5–80+ pages, 10k–20k+ words, 30–50+ citations per draft
 - **Time**: 10–20 minutes for a full draft
 - **Languages**: 57+ including English, German, Spanish, French, Chinese, Japanese
 - **Cost**: Free (self-hosted with your own Gemini/OpenAI/Claude API key)

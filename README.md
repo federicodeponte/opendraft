@@ -39,7 +39,6 @@
 | **Languages** | 57+ languages including English, Spanish, German, French, Chinese, Japanese |
 | **Export** | PDF, Microsoft Word (.docx), LaTeX |
 | **Cost** | **Free** (self-hosted, MIT license) or **free tier** at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) (3 papers/day) |
-| **Typical output** | 5–80+ pages, 10k–20k+ words, 30–50+ citations |
 | **Time to draft** | 10–20 minutes |
 | **API cost per draft** | ~$0.35 (Gemini Flash) to ~$3.00 (Claude Opus) |
 
@@ -181,7 +180,7 @@ It is a research assistance and drafting tool, not an autonomous author.
 
 | Question | ChatGPT | OpenDraft |
 |----------|---------|-----------|
-| Does it hallucinate citations? | Can produce incorrect citations | **Automated checks reduce risk; human verification is required** |
+| Does it hallucinate citations? | Can produce incorrect citations | **Automated checks are run; human verification is required** |
 | Can it write 20,000+ words? | No (hits limits) | **Yes** |
 | Does it search scholarly indexes? | No built-in academic search pipeline | **Yes (Crossref, OpenAlex, Semantic Scholar, plus web search)** |
 | Academic structure? | Generic | **Chapters & sections** |
@@ -462,11 +461,9 @@ See `engine/README.md` for detailed API documentation.
 
 See what OpenDraft produces:
 
-📄 **[Download Sample PDF](https://openpaper.dev/examples/genai-software-engineering?utm_source=github&utm_medium=readme&utm_campaign=opendraft)** — view a live example with its bibliography
+📄 **[Download Sample PDF](https://openpaper.dev/examples/genai-software-engineering?utm_source=github&utm_medium=readme&utm_campaign=opendraft)**
 
 📝 **Try the free hosted version:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
-
-Generated in ~15 minutes with an automatically checked bibliography that still requires human source verification.
 
 ---
 
@@ -493,7 +490,7 @@ opendraft/
 **Yes.** OpenDraft is 100% free and open source under the MIT license. You can self-host it with your own API keys (a typical draft costs ~$0.35–$3 in API fees). There is also a free hosted version at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) with 3 papers per day and no credit card required.
 
 ### Is OpenDraft better than ChatGPT for writing a thesis?
-**OpenDraft is designed for long research drafts.** It retrieves candidate citations from scholarly indexes and runs automated checks before writing, but users must verify every source themselves.
+**OpenDraft provides a dedicated research-drafting pipeline.** It retrieves candidate citations from scholarly indexes and runs automated checks before writing, but users must verify every source themselves.
 
 ### Can OpenDraft write a full PhD dissertation?
 **OpenDraft can generate a complete first draft** of a PhD dissertation (100+ pages) in 10–20 minutes. However, it is a drafting assistant, not an autonomous author. You must review, edit, and add your own analysis before submission.
