@@ -8,13 +8,12 @@
 </p>
 
 <p align="center">
-  <b>Free, open-source autonomous research engine: auto research from a prompt to a source-grounded draft with <em>verified</em> citations.</b><br>
-  19 specialized agents · CrossRef, OpenAlex, Semantic Scholar, arXiv · PDF/DOCX/LaTeX export
+  <b>Free, open-source autonomous research engine: from a prompt to a long-form draft with automated citation checks.</b><br>
+  19 specialized agents · Crossref, OpenAlex, Semantic Scholar, web search · PDF/DOCX/LaTeX export
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Human%20Review-Required-orange.svg" alt="Human Review Required">
-  <img src="https://img.shields.io/badge/Citations-Verified-blue.svg" alt="Verified Citations">
 </p>
 
 <p align="center">
@@ -24,7 +23,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/demo.gif" width="900" alt="OpenDraft generating a source-grounded research paper from a single prompt, with verified citations and a typeset PDF">
+  <img src="assets/demo.gif" width="900" alt="OpenDraft generating a research paper draft from a single prompt, with a bibliography and a typeset PDF">
 </p>
 
 ---
@@ -33,14 +32,14 @@
 
 | | |
 |:---|:---|
-| **What it is** | Open-source Python engine for AI-generated research drafts with verified citations |
+| **What it is** | Open-source Python engine for AI-generated research drafts with automated citation checks |
 | **Best for** | Literature reviews, research papers, thesis drafts, reproducible research workflows |
 | **Agents** | 19 specialized AI agents (research, structure, writing, citation, polish, export) |
-| **Sources** | CrossRef, OpenAlex, Semantic Scholar (200M+), arXiv |
+| **Sources** | Crossref, OpenAlex, Semantic Scholar, and web search |
 | **Languages** | 57+ languages including English, Spanish, German, French, Chinese, Japanese |
 | **Export** | PDF, Microsoft Word (.docx), LaTeX |
 | **Cost** | **Free** (self-hosted, MIT license) or **free tier** at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) (3 papers/day) |
-| **Typical output** | 5–80+ pages, 10k–20k+ words, 30–50+ verified citations |
+| **Typical output** | 5–80+ pages, 10k–20k+ words, 30–50+ citations |
 | **Time to draft** | 10–20 minutes |
 | **API cost per draft** | ~$0.35 (Gemini Flash) to ~$3.00 (Claude Opus) |
 
@@ -72,9 +71,9 @@
 
 ## What is OpenDraft?
 
-**OpenDraft is an open-source Python engine that generates source-grounded research drafts using 19 specialized AI agents.** It is designed for academic researchers who need long-form documents (10,000–20,000+ words) with citations verified against real databases.
+**OpenDraft is an open-source Python engine that generates research drafts using 19 specialized AI agents.** It is designed for academic researchers who need long-form documents (10,000–20,000+ words) with citations collected and checked by an automated pipeline.
 
-Unlike general-purpose chatbots such as ChatGPT, OpenDraft does not invent its citations. Every source is verified against CrossRef, OpenAlex, Semantic Scholar, and arXiv before being included in the bibliography, so every citation links to a real paper.
+OpenDraft retrieves candidate citations from Crossref, OpenAlex, Semantic Scholar, and web search. Its citation phase checks supplied DOIs against Crossref, checks URL status and metadata patterns, and filters low-relevance entries. The default non-strict filter removes entries with failing URLs or suspicious metadata, but an unrecognized DOI alone does not remove an entry. Human review of every source remains required.
 
 - **OpenDraft is** a command-line tool and Python library for drafting academic papers.
 - **OpenPaper is** the free hosted SaaS version of OpenDraft (3 papers per day, no credit card required).
@@ -124,7 +123,7 @@ Same engine, two ways to run it. Self-host for full control, or use the hosted v
 | **Setup** | Clone, install Python deps, configure `.env` (~10 min) | None — open the site and start writing |
 | **API keys** | You bring your own (Gemini / OpenAI / Anthropic) | Included — nothing to manage |
 | **Infra** | You run it locally or on your own server | Fully hosted in your browser |
-| **Sources** | CrossRef, OpenAlex, Semantic Scholar, arXiv | CrossRef, OpenAlex, Semantic Scholar, arXiv |
+| **Sources** | Crossref, OpenAlex, Semantic Scholar, web search | CrossRef, OpenAlex, Semantic Scholar, arXiv |
 | **Export** | PDF, Word (.docx), LaTeX | PDF, Word (.docx) |
 | **Support** | Community (GitHub issues) | Maintained service, email support |
 | **Price** | Free (MIT) + your own API costs (~$0.35–$3 per draft) | Free tier: 3 papers/day, no card · one-time credit packs from $2.99 (no subscription) |
@@ -149,7 +148,7 @@ We open-sourced OpenDraft so researchers can inspect, critique, and improve how 
 
 ### What Problem Does OpenDraft Solve?
 
-1. **Hallucinated citations** — ChatGPT and similar LLMs invent citations 30–50% of the time. OpenDraft verifies every source.
+1. **Citation review** — OpenDraft collects candidate sources, checks DOI and URL status, flags suspicious metadata, and filters selected failure classes before drafting.
 2. **Length limits** — Most AI tools cannot produce documents longer than a few thousand words. OpenDraft generates 20,000+ word research drafts.
 3. **Generic structure** — ChatGPT outputs lack proper academic chapter/section hierarchy. OpenDraft builds structured research outlines.
 4. **No export options** — ChatGPT cannot export to PDF or Word with academic formatting. OpenDraft exports to PDF, DOCX, and LaTeX.
@@ -160,7 +159,7 @@ We open-sourced OpenDraft so researchers can inspect, critique, and improve how 
 - **Researchers** preparing literature reviews, journal submissions, or structured first drafts.
 - **Open-source maintainers** building tools on top of a reproducible research-drafting pipeline.
 - **Graduate students** working on a master's thesis or PhD dissertation.
-- **Academics** who want to verify that every citation in their AI-assisted draft links to a real paper.
+- **Academics** who want an inspectable bibliography and removal report for their AI-assisted draft.
 - **Developers** extending the agent pipeline for custom research workflows, citation validators, and export formats.
 
 ---
@@ -182,16 +181,16 @@ It is a research assistance and drafting tool, not an autonomous author.
 
 | Question | ChatGPT | OpenDraft |
 |----------|---------|-----------|
-| Does it hallucinate citations? | Yes (often) | **Verified against real databases** |
+| Does it hallucinate citations? | Can produce incorrect citations | **Automated checks reduce risk; human verification is required** |
 | Can it write 20,000+ words? | No (hits limits) | **Yes** |
-| Does it search real papers? | No | **Yes (CrossRef, OpenAlex, Semantic Scholar, arXiv)** |
+| Does it search scholarly indexes? | No built-in academic search pipeline | **Yes (Crossref, OpenAlex, Semantic Scholar, plus web search)** |
 | Academic structure? | Generic | **Chapters & sections** |
 | Export to PDF/Word? | No | **Yes** |
 | Free? | Limited | **100% free (self-host)** |
 | Open source? | No | **Yes (MIT license)** |
 | Hosted SaaS? | ChatGPT Plus $20/mo | **OpenPaper.dev — 3 free/day** |
 
-**Bottom line:** If you need an AI for academic writing with real citations, OpenDraft is a free, open-source alternative to ChatGPT.
+**Bottom line:** If you need an open, inspectable academic drafting pipeline with automated citation checks, OpenDraft is a free, open-source option.
 
 ---
 
@@ -200,10 +199,10 @@ It is a research assistance and drafting tool, not an autonomous author.
 OpenDraft uses **19 specialized AI agents** that work like a research team:
 
 ```
-📚 RESEARCH PHASE    → Finds relevant papers from CrossRef, OpenAlex, Semantic Scholar, arXiv
+📚 RESEARCH PHASE    → Retrieves candidate sources from Crossref, OpenAlex, Semantic Scholar, and web search
 🏗️ STRUCTURE PHASE   → Creates research outline with chapters
 ✍️ WRITING PHASE     → Drafts each section with academic tone
-🔍 CITATION PHASE    → Verifies every source exists (CrossRef, arXiv)
+🔍 CITATION PHASE    → Checks DOI, URL, metadata, and topical relevance; filters selected failures
 ✨ POLISH PHASE      → Refines language and formatting
 📄 EXPORT PHASE      → Generates PDF, Word, or LaTeX
 ```
@@ -214,8 +213,8 @@ OpenDraft uses **19 specialized AI agents** that work like a research team:
 
 ## Features
 
-### AI That Doesn't Make Up Citations
-Every citation is verified against CrossRef, OpenAlex, Semantic Scholar, and arXiv. If a paper doesn't exist, it's not included.
+### Automated Citation Checks
+For each candidate citation, OpenDraft checks a supplied DOI against Crossref, checks its URL when present, and looks for suspicious metadata. The default pipeline removes failing URLs, suspicious metadata, and low-relevance entries. It can retain an entry whose DOI Crossref does not recognize, so the generated bibliography still requires human verification.
 
 ### Write Any Type of Academic Paper
 - Research papers (5-15 pages)
@@ -463,11 +462,11 @@ See `engine/README.md` for detailed API documentation.
 
 See what OpenDraft produces:
 
-📄 **[Download Sample PDF](https://openpaper.dev/examples/genai-software-engineering?utm_source=github&utm_medium=readme&utm_campaign=opendraft)** — view a live example with verified citations
+📄 **[Download Sample PDF](https://openpaper.dev/examples/genai-software-engineering?utm_source=github&utm_medium=readme&utm_campaign=opendraft)** — view a live example with its bibliography
 
 📝 **Try the free hosted version:** [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft)
 
-Generated in ~15 minutes with verified citations from real academic papers.
+Generated in ~15 minutes with an automatically checked bibliography that still requires human source verification.
 
 ---
 
@@ -494,13 +493,13 @@ opendraft/
 **Yes.** OpenDraft is 100% free and open source under the MIT license. You can self-host it with your own API keys (a typical draft costs ~$0.35–$3 in API fees). There is also a free hosted version at [OpenPaper.dev](https://openpaper.dev?utm_source=github&utm_medium=readme&utm_campaign=opendraft) with 3 papers per day and no credit card required.
 
 ### Is OpenDraft better than ChatGPT for writing a thesis?
-**Yes, for research drafts.** ChatGPT frequently hallucinates citations and cannot produce documents longer than a few thousand words. OpenDraft generates 20,000+ word research drafts with every citation verified against real academic databases.
+**OpenDraft is designed for long research drafts.** It retrieves candidate citations from scholarly indexes and runs automated checks before writing, but users must verify every source themselves.
 
 ### Can OpenDraft write a full PhD dissertation?
 **OpenDraft can generate a complete first draft** of a PhD dissertation (100+ pages) in 10–20 minutes. However, it is a drafting assistant, not an autonomous author. You must review, edit, and add your own analysis before submission.
 
 ### Does OpenDraft make up citations?
-**No.** OpenDraft verifies every citation against CrossRef, OpenAlex, Semantic Scholar, and arXiv. If a paper does not exist, it is not included in the bibliography.
+**It can.** OpenDraft checks supplied DOIs against Crossref and checks URLs and metadata, but the default non-strict filter can retain an entry whose DOI is not recognized. Treat the bibliography as a draft and verify every source before use.
 
 ### What is the difference between OpenDraft and OpenPaper?
 **OpenDraft** is the open-source Python engine you run locally. **OpenPaper** is the hosted SaaS version that runs OpenDraft in the cloud so you can use it in your browser without installing anything.
@@ -526,7 +525,7 @@ You can also use the free hosted version at **[OpenPaper.dev](https://openpaper.
 
 ### Is this better than ChatGPT for academic writing?
 
-**For research drafts, yes.** ChatGPT often hallucinates citations. OpenDraft verifies every citation against CrossRef, OpenAlex, Semantic Scholar, and arXiv.
+**OpenDraft provides a specialized research-drafting pipeline.** It retrieves candidate sources and performs automated citation checks, but those checks are not a guarantee that every bibliography entry exists or is correct.
 
 ### Can I use this for my university thesis?
 
@@ -547,14 +546,14 @@ Most AI tools use a single model. OpenDraft uses **19 specialized agents**—one
 
 ## Alternatives Comparison (2025)
 
-| Tool | Price | Open Source | Verified Citations | Long Documents | Hosted Free Tier |
+| Tool | Price | Open Source | Citation checks | Long Documents | Hosted Free Tier |
 |------|-------|-------------|-------------------|----------------|------------------|
-| **OpenDraft** | Free | ✅ Yes | ✅ Yes | ✅ Yes | ✅ OpenPaper.dev (3/day) |
+| **OpenDraft** | Free | ✅ Yes | ✅ Automated; human review required | ✅ Yes | ✅ OpenPaper.dev (3/day) |
 | ChatGPT Plus | $20/mo | ❌ No | ❌ No | ❌ No | ❌ No |
 | Jasper | $49/mo | ❌ No | ❌ No | ✅ Yes | ❌ No |
 | Jenni AI | $20/mo | ❌ No | ⚠️ Partial | ✅ Yes | ❌ No |
 
-**OpenDraft is a free, open-source research draft generator with verified citations.**
+**OpenDraft is a free, open-source research draft generator with automated citation checks.**
 
 ---
 
@@ -562,7 +561,7 @@ Most AI tools use a single model. OpenDraft uses **19 specialized agents**—one
 
 - **Engine:** Python 3.10+, multi-agent orchestration
 - **Models:** Google Gemini 3, Anthropic Claude Sonnet 4.5 / Opus 4.5, OpenAI GPT-5.5 / GPT-5
-- **Citations:** CrossRef API, OpenAlex API, Semantic Scholar API, arXiv API
+- **Citations:** Crossref API, OpenAlex API, Semantic Scholar API, and web-search fallback
 - **Export:** WeasyPrint (PDF), python-docx (Word)
 
 ---
@@ -596,9 +595,9 @@ Maintainer workflow docs:
 
 ## Summary
 
-**OpenDraft** is a free, open-source Python engine for generating academic research drafts. It uses 19 specialized AI agents to create drafts with citations verified against real databases (CrossRef, OpenAlex, Semantic Scholar, arXiv).
+**OpenDraft** is a free, open-source Python engine for generating academic research drafts. It uses 19 specialized AI agents, retrieves candidate citations from scholarly indexes and web search, and applies automated DOI, URL, metadata, and relevance checks.
 
-**Keywords:** AI research draft generator, open source academic writing, ChatGPT alternative, multi-agent AI, verified citations, Python research engine, literature review generator, OpenPaper, source-grounded citations, academic workflow automation
+**Keywords:** AI research draft generator, open source academic writing, ChatGPT alternative, multi-agent AI, citation checks, Python research engine, literature review generator, OpenPaper, academic workflow automation
 
 ---
 
