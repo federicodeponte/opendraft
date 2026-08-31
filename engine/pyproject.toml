@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opendraft"
 version = "1.7.3"
-description = "Generate master-level research papers with real citations in minutes"
+description = "Generate master-level research drafts with automated citation checks"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [

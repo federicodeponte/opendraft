@@ -1,6 +1,6 @@
 # OpenDraft
 
-AI-powered research paper generator with verified citations.
+AI-powered research draft generator with automated citation checks. The generated bibliography requires human source verification.
 
 ## Quick Start
 
