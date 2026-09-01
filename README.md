@@ -8,13 +8,13 @@
 </p>
 
 <p align="center">
-  <b>Free, open-source autonomous research engine: auto research from a prompt to a source-grounded draft with <em>verified</em> citations.</b><br>
+  <b>Free, open-source autonomous research engine: auto research from a prompt to a source-grounded draft whose citations are kept only when two scholarly databases hold the DOI.</b><br>
   19 specialized agents · CrossRef, OpenAlex, Semantic Scholar · PDF/DOCX/LaTeX export
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Human%20Review-Required-orange.svg" alt="Human Review Required">
-  <img src="https://img.shields.io/badge/Citations-Verified-blue.svg" alt="Verified Citations">
+  <img src="https://img.shields.io/badge/DOIs-Confirmed%20in%202%2B%20databases-blue.svg" alt="DOIs confirmed in two or more databases">
 </p>
 
 <p align="center">
@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/demo.gif" width="900" alt="OpenDraft generating a source-grounded research paper from a single prompt, with verified citations and a typeset PDF">
+  <img src="assets/demo.gif" width="900" alt="OpenDraft generating a source-grounded research paper from a single prompt, with DOIs confirmed in two scholarly databases and a typeset PDF">
 </p>
 
 ---
@@ -31,7 +31,7 @@
 
 | | |
 |:---|:---|
-| **What it is** | Open-source Python engine for AI-generated research drafts with verified citations |
+| **What it is** | Open-source Python engine for AI-generated research drafts whose citations are dropped unless two scholarly databases hold the DOI |
 | **Best for** | Literature reviews, research papers, thesis drafts, reproducible research workflows |
 | **Agents** | 19 specialized AI agents (research, structure, writing, citation, polish, export) |
 | **Sources** | CrossRef, OpenAlex, Semantic Scholar (200M+) |
@@ -66,7 +66,7 @@
 
 ## What is OpenDraft?
 
-**OpenDraft is an open-source Python engine that generates source-grounded research drafts using 19 specialized AI agents.** It is designed for academic researchers who need long-form documents (10,000–20,000+ words) with citations verified against real databases.
+**OpenDraft is an open-source Python engine that generates source-grounded research drafts using 19 specialized AI agents.** It is designed for academic researchers who need long-form documents (10,000–20,000+ words) whose citations are dropped unless at least two of CrossRef, OpenAlex and Semantic Scholar hold the DOI.
 
 OpenDraft does not invent its citations. By default a source is only included once its DOI is held by at least **two** of CrossRef, OpenAlex and Semantic Scholar, and every citation records which databases confirmed it and which ones this engine re-queried itself. See [Citation verification](#citation-verification) for exactly what that does and does not establish.
 
@@ -116,7 +116,7 @@ We open-sourced OpenDraft so researchers can inspect, critique, and improve how 
 - **Researchers** preparing literature reviews, journal submissions, or structured first drafts.
 - **Open-source maintainers** building tools on top of a reproducible research-drafting pipeline.
 - **Graduate students** working on a master's thesis or PhD dissertation.
-- **Academics** who want to verify that every citation in their AI-assisted draft links to a real paper.
+- **Academics** who want each citation to record which databases held its DOI, so they can check the sources themselves.
 - **Developers** extending the agent pipeline for custom research workflows, citation validators, and export formats.
 
 ---
@@ -511,9 +511,9 @@ See `engine/README.md` for detailed API documentation.
 
 See what OpenDraft produces:
 
-Sample drafts with their verified bibliographies are in the [`examples/`](examples/) directory.
+A sample draft is in the [`examples/`](examples/) directory, as PDF and DOCX. The directory carries no `bibliography.json`, so the provenance fields described under [Citation verification](#citation-verification) cannot be inspected from it.
 
-Generated in ~15 minutes with verified citations from real academic papers.
+Generated in ~15 minutes, before multi-source confirmation became the default.
 
 ---
 
@@ -623,7 +623,7 @@ Maintainer workflow docs:
 
 ## Summary
 
-**OpenDraft** is a free, open-source Python engine for generating academic research drafts. It uses 19 specialized AI agents to create drafts whose citations are confirmed against real databases (CrossRef, OpenAlex, Semantic Scholar).
+**OpenDraft** is a free, open-source Python engine for generating academic research drafts. It uses 19 specialized AI agents, and by default keeps a citation only when at least two of CrossRef, OpenAlex and Semantic Scholar hold its DOI. That establishes that the work is registered and indexed, not that it supports the sentence it is attached to.
 
 ---
 
