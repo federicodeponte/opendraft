@@ -54,6 +54,7 @@
 - [How It Works](#how-it-works)
 - [Citation verification](#citation-verification)
 - [Features](#features)
+- [Use it as a Claude Skill](#use-it-as-a-claude-skill)
 - [Quick Start](#quick-start)
 - [Which AI Model Should I Use?](#which-ai-model-should-i-use)
 - [Example Output](#example-output)
@@ -447,6 +448,47 @@ opendraft digest paper.pdf --voice adam
 Output: `paper_digest.mp3` - a professional narration summarizing the key points.
 
 **Setup:** Set `ELEVENLABS_API_KEY` in your environment or `.env` file.
+
+---
+
+## Use it as a Claude Skill
+
+This engine also exists as a Skill, for agents that read Skills. Claude Code is one.
+
+```bash
+npx skills add getedgehq/skills --skill opendraft
+```
+
+Then say `Write a paper on <topic>` and the agent runs the pipeline itself.
+
+**It is a port, not a wrapper.** It does not call this Python engine and it does
+not talk to any hosted service. The eighteen stages are eighteen markdown prompts
+the agent executes in order, plus five standard-library Python scripts for the
+parts a language model must not do by hand: source lookup, deterministic citation
+compilation, an integrity gate, assembly and export. No API key, no account, and
+no model of ours in the loop, because the agent reading the Skill is the model.
+Every stage is a file you can open and edit.
+
+**What differs from the engine in this repository.** The Skill queries Crossref,
+OpenAlex and DataCite only, with no Semantic Scholar client, so the multi-source
+confirmation rule described in [Citation verification](#citation-verification) is
+not the rule it applies. Its gate is narrower and stricter in a different place:
+every DOI it prints resolved at Crossref or DataCite, and `citations.py compile`
+refuses to render a bibliography containing one that did not, naming the offender
+and exiting nonzero. It has no hosted run history, and export goes through pandoc
+rather than this repository's PDF pipeline.
+
+**What carries over.** Claim-to-source checking is stage 11, a prompt rather than
+a service call, and it still starts from the position that DOI resolution proves
+a record exists and nothing more. Unsourced statistics are swept for separately,
+because a fabricated number sitting beside a perfectly valid citation passes an
+existence check by design. Human review is required for the same reasons it is
+required here.
+
+The Skill is published under Apache-2.0; the OpenDraft-derived material keeps its
+MIT notice in the bundle's `THIRD_PARTY_NOTICES.md`, and its `DERIVATION.json`
+records the SHA-256 of every shipped file and maps each prompt and script back to
+its origin here.
 
 ---
 
