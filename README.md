@@ -8,13 +8,12 @@
 </p>
 
 <p align="center">
-  <b>Free, open-source autonomous research engine: auto research from a prompt to a source-grounded draft with <em>verified</em> citations.</b><br>
+  <b>Free, open-source autonomous research engine: auto research from a prompt to a source-grounded draft with citations checked against CrossRef, OpenAlex and Semantic Scholar.</b><br>
   19 specialized agents · CrossRef, OpenAlex, Semantic Scholar · PDF/DOCX/LaTeX export
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Human%20Review-Required-orange.svg" alt="Human Review Required">
-  <img src="https://img.shields.io/badge/Citations-Verified-blue.svg" alt="Verified Citations">
 </p>
 
 <p align="center">
@@ -31,7 +30,7 @@
 
 | | |
 |:---|:---|
-| **What it is** | Open-source Python engine for AI-generated research drafts with verified citations |
+| **What it is** | Open-source Python engine for AI-generated research drafts with citations checked against CrossRef, OpenAlex and Semantic Scholar |
 | **Best for** | Literature reviews, research papers, thesis drafts, reproducible research workflows |
 | **Agents** | 19 specialized AI agents (research, structure, writing, citation, polish, export) |
 | **Sources** | CrossRef, OpenAlex, Semantic Scholar (200M+) |
