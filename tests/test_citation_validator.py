@@ -4,6 +4,7 @@ ABOUTME: Tests for offline citation validator behavior
 ABOUTME: Covers CrossRef DOI retry handling for transient API failures
 """
 
+import logging
 import os
 import sys
 
@@ -40,7 +41,7 @@ def test_validate_doi_retries_timeout_then_success(monkeypatch):
     assert len(calls) == 2
 
 
-def test_validate_doi_returns_unknown_after_retry_exhaustion(monkeypatch):
+def test_validate_doi_returns_unknown_after_retry_exhaustion(monkeypatch, caplog):
     """Persistent CrossRef network errors should preserve unknown DOI status."""
     calls = []
 
@@ -50,8 +51,11 @@ def test_validate_doi_returns_unknown_after_retry_exhaustion(monkeypatch):
 
     monkeypatch.setattr(requests, "get", fake_get)
 
-    assert CitationValidator(timeout=1).validate_doi("10.1000/flaky") is None
+    with caplog.at_level(logging.WARNING, logger="utils.citation_validator"):
+        assert CitationValidator(timeout=1).validate_doi("10.1000/flaky") is None
+
     assert len(calls) == 3
+    assert "CrossRef DOI validation failed after retries" in caplog.text
 
 
 def test_validate_doi_retries_rate_limit_then_success(monkeypatch):
