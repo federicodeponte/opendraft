@@ -39,6 +39,7 @@ from .openalex import OpenAlexClient
 from .semantic_scholar import SemanticScholarClient
 from .gemini_grounded import GeminiGroundedClient
 from .serper_client import SerperClient
+from .tavily_client import TavilySearchClient
 from .query_router import QueryRouter, QueryClassification
 from .base import validate_publication_year, validate_author_name
 from .multi_source import (
@@ -254,6 +255,20 @@ class CitationResearcher:
         if self.enable_semantic_scholar:
             self.semantic_scholar = SemanticScholarClient()
 
+        # Tavily web search client (optional, activated by TAVILY_API_KEY)
+        self.use_tavily = False
+        self.tavily_client = None
+        if os.getenv('TAVILY_API_KEY'):
+            try:
+                self.tavily_client = TavilySearchClient(
+                    validate_urls=False,
+                    timeout=15,
+                )
+                self.use_tavily = True
+                logger.info("Tavily search client initialized (TAVILY_API_KEY present)")
+            except Exception as e:
+                logger.warning(f"Tavily client unavailable: {e}")
+
         # Web search client: Serper (preferred) or Gemini Grounded (fallback)
         if self.enable_gemini_grounded:
             if self.use_serper:
@@ -311,6 +326,7 @@ class CitationResearcher:
             "Semantic Scholar": 0,
             "Gemini Grounded": 0,
             "Serper": 0,
+            "Tavily": 0,
         }
 
     def _init_gemini_grounded(self):
@@ -504,7 +520,7 @@ class CitationResearcher:
                 safe_print(f"    📊 Query type: {classification.query_type} (confidence: {classification.confidence:.2f})")
         else:
             # Use original fallback chain if smart routing disabled
-            api_chain = ['crossref', 'openalex', 'semantic_scholar', 'gemini_grounded']
+            api_chain = ['crossref', 'openalex', 'semantic_scholar', 'tavily', 'gemini_grounded']
 
         # Filter out disabled APIs from chain (Day 1 Fix)
         enabled_chain = []
@@ -514,6 +530,8 @@ class CitationResearcher:
             if api_name == 'openalex' and not self.enable_openalex:
                 continue
             if api_name == 'semantic_scholar' and not self.enable_semantic_scholar:
+                continue
+            if api_name == 'tavily' and not self.use_tavily:
                 continue
             if api_name == 'gemini_grounded' and not self.enable_gemini_grounded:
                 continue
@@ -657,6 +675,25 @@ class CitationResearcher:
                         if self.verbose:
                             safe_print(f"✗ Error: {e}")
                         logger.error(f"Semantic Scholar error: {e}")
+
+                elif api_name == 'tavily' and self.use_tavily:
+                    self._report_progress("Tavily AI search...", "search")
+                    if self.verbose:
+                        safe_print(f"    → Trying Tavily Search...", end=" ", flush=True)
+                    try:
+                        metadata = self.tavily_client.search_paper(topic)
+                        if metadata and (metadata.get('doi') or metadata.get('url')):
+                            valid_results.append((metadata, "Tavily"))
+                            self.source_usage_count["Tavily"] = self.source_usage_count.get("Tavily", 0) + 1
+                            if self.verbose:
+                                safe_print(f"✓")
+                        else:
+                            if self.verbose:
+                                safe_print(f"✗")
+                    except Exception as e:
+                        if self.verbose:
+                            safe_print(f"✗ Error: {e}")
+                        logger.error(f"Tavily error: {e}")
 
                 elif api_name == 'gemini_grounded' and self.enable_gemini_grounded:
                     self._report_progress("AI-powered academic search...", "search")
@@ -1199,6 +1236,17 @@ class CitationResearcher:
                     return (metadata, "Semantic Scholar")
                 else:
                     logger.debug(f"  ✗ Semantic Scholar returned no results")
+            elif api_name == 'tavily' and self.use_tavily:
+                logger.debug(f"  → Calling Tavily Search API...")
+                metadata = self.tavily_client.search_paper(topic)
+                if metadata and (metadata.get('doi') or metadata.get('url')):
+                    logger.info(
+                        f"  ✓ Tavily found: {metadata.get('title', 'Unknown')[:80]}... (URL: {metadata.get('url', 'N/A')[:50]})"
+                    )
+                    return (metadata, "Tavily")
+                else:
+                    logger.debug(f"  ✗ Tavily returned no results")
+
             elif api_name == 'gemini_grounded' and self.enable_gemini_grounded:
                 logger.debug(f"  → Applying rate limiting before Gemini Grounded call...")
                 rate_limiter = get_gemini_rate_limiter()
@@ -1427,6 +1475,8 @@ Return a JSON object with this structure:
             self.semantic_scholar.close()
         if hasattr(self, "gemini_grounded"):
             self.gemini_grounded.close()
+        if hasattr(self, "tavily_client") and self.tavily_client:
+            self.tavily_client.close()
 
     def __enter__(self):
         """Context manager entry."""
