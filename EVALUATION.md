@@ -88,15 +88,26 @@ OpenDraft is an open-source research drafting engine with 19 specialized agents.
 ## Running Evaluations
 
 ```bash
-# Run full evaluation suite
-python scripts/eval_citation_accuracy.py --topics data/eval_topics.json --output reports/
-
-# Run regression test against golden topics
-python scripts/eval_regression.py --baseline reports/baseline.json
-
 # Generate comparison report across models
-python scripts/eval_cross_model.py --providers gemini,openai,anthropic
+export GOOGLE_API_KEY=...
+export OPENAI_API_KEY=...
+export ANTHROPIC_API_KEY=...
+python scripts/eval_cross_model.py \
+  --topic "Retrieval-augmented generation for scientific literature" \
+  --providers gemini,openai,anthropic
 ```
+
+The command writes `comparison.md`, machine-readable `results.json`, and one
+output directory per provider under `reports/cross_model_<timestamp>/`. Use
+`--output-type expose` for a shorter research-and-outline comparison, or model
+flags such as `--openai-model` to override the defaults. Providers run
+sequentially so their timings are not distorted by local contention.
+
+The citation-verification rate is the percentage of retained bibliography
+entries marked `multi_source_confirmed`. Cost is estimated from tracked token
+usage and the pricing table in `engine/utils/model_config.py`; the report uses
+an em dash when pricing or usage is unavailable rather than reporting a
+misleading zero.
 
 ## Contributing to Evals
 

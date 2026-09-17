@@ -43,13 +43,13 @@ def safe_print(*args, **kwargs):
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from google import genai
 from config import get_config
 from concurrency.concurrency_config import get_concurrency_config
 from utils.output_validators import ValidationResult
 from utils.api_citations.orchestrator import CitationResearcher
 from utils.citation_database import Citation
 from utils.gemini_client import GeminiModelWrapper
+from utils.provider_clients import AnthropicModelWrapper, OpenAIModelWrapper
 from utils.deep_research import DeepResearchPlanner
 from utils.token_tracker import CallStatus
 
@@ -59,32 +59,59 @@ logger = logging.getLogger(__name__)
 
 def setup_model(model_override: Optional[str] = None) -> Any:
     """
-    Initialize and return configured Gemini model wrapper.
+    Initialize the model wrapper for the configured provider.
 
     Args:
         model_override: Optional model name to override config default
 
     Returns:
-        GeminiModelWrapper: Configured model wrapper with generate_content() method
+        A provider wrapper with a generate_content() method.
 
     Raises:
         ValueError: If API key is missing or model name is invalid
     """
     config = get_config()
 
-    if not config.google_api_key:
-        raise ValueError(
-            "GOOGLE_API_KEY not found. Set it in .env file or environment variables."
+    model_name = model_override or config.model.model_name
+    provider = config.model.provider
+
+    if provider == "gemini":
+        if not config.google_api_key:
+            raise ValueError(
+                "GOOGLE_API_KEY not found. Set it in .env file or environment variables."
+            )
+        from google import genai
+
+        return GeminiModelWrapper(
+            client=genai.Client(api_key=config.google_api_key),
+            model_name=model_name,
+            temperature=config.model.temperature,
         )
 
-    client = genai.Client(api_key=config.google_api_key)
-    model_name = model_override or config.model.model_name
+    if provider == "openai":
+        if not config.openai_api_key:
+            raise ValueError("OPENAI_API_KEY not found. Set it in .env or the environment.")
+        from openai import OpenAI
 
-    return GeminiModelWrapper(
-        client=client,
-        model_name=model_name,
-        temperature=config.model.temperature,
-    )
+        return OpenAIModelWrapper(
+            client=OpenAI(api_key=config.openai_api_key),
+            model_name=model_name,
+            temperature=config.model.temperature,
+        )
+
+    if provider in {"anthropic", "claude"}:
+        if not config.anthropic_api_key:
+            raise ValueError("ANTHROPIC_API_KEY not found. Set it in .env or the environment.")
+        from anthropic import Anthropic
+
+        return AnthropicModelWrapper(
+            client=Anthropic(api_key=config.anthropic_api_key),
+            model_name=model_name,
+            temperature=config.model.temperature,
+            max_output_tokens=config.model.max_output_tokens or 8192,
+        )
+
+    raise ValueError(f"Unsupported AI provider: {provider}")
 
 
 def _load_prompt_via_resources(prompt_path: str) -> Optional[str]:
