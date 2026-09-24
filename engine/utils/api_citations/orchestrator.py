@@ -39,6 +39,7 @@ from .openalex import OpenAlexClient
 from .semantic_scholar import SemanticScholarClient
 from .gemini_grounded import GeminiGroundedClient
 from .serper_client import SerperClient
+from .youcom_client import YoucomClient
 from .query_router import QueryRouter, QueryClassification
 from .base import validate_publication_year, validate_author_name
 from .multi_source import (
@@ -193,6 +194,7 @@ class CitationResearcher:
         enable_llm_fallback: bool = False,
         enable_smart_routing: bool = True,
         use_serper: bool = None,  # None = auto-detect from env
+        use_youcom: bool = None,  # None = auto-detect from env
         require_multi_source: bool = True,
         min_confirming_sources: int = 2,
         allow_unconfirmed_web_sources: bool = False,
@@ -244,6 +246,12 @@ class CitationResearcher:
             self.use_serper = os.getenv('USE_SERPER', 'false').lower() == 'true'
         else:
             self.use_serper = use_serper
+
+        # Auto-detect You.com from env if not explicitly set
+        if use_youcom is None:
+            self.use_youcom = os.getenv('USE_YOUCOM', 'false').lower() == 'true'
+        else:
+            self.use_youcom = use_youcom
         self.verbose = verbose
 
         # Initialize API clients
@@ -269,6 +277,18 @@ class CitationResearcher:
                     self._init_gemini_grounded()
             else:
                 self._init_gemini_grounded()
+
+        # You.com web search client (optional, USE_YOUCOM=true or YDC_API_KEY set)
+        if self.use_youcom or os.getenv('YDC_API_KEY'):
+            try:
+                self.youcom = YoucomClient(
+                    validate_urls=False,  # Disable URL validation for speed
+                    timeout=15,
+                )
+                logger.info("You.com search client initialized for web search")
+            except Exception as e:
+                logger.warning(f"You.com client unavailable: {e}")
+                self.use_youcom = False
 
         # Initialize smart query router
         if self.enable_smart_routing:
@@ -311,6 +331,7 @@ class CitationResearcher:
             "Semantic Scholar": 0,
             "Gemini Grounded": 0,
             "Serper": 0,
+            "You.com": 0,
         }
 
     def _init_gemini_grounded(self):
@@ -517,6 +538,8 @@ class CitationResearcher:
                 continue
             if api_name == 'gemini_grounded' and not self.enable_gemini_grounded:
                 continue
+            if api_name == 'youcom' and not (self.use_youcom or os.getenv('YDC_API_KEY')):
+                continue
             enabled_chain.append(api_name)
 
         api_chain = enabled_chain
@@ -546,6 +569,8 @@ class CitationResearcher:
                 parallel_apis.append('semantic_scholar')
             if self.enable_gemini_grounded:
                 parallel_apis.append('gemini_grounded')
+            if self.use_youcom or os.getenv('YDC_API_KEY'):
+                parallel_apis.append('youcom')
 
 
             # Report progress for parallel search
@@ -678,6 +703,25 @@ class CitationResearcher:
                         if self.verbose:
                             safe_print(f"✗ Error: {e}")
                         logger.error(f"Gemini Grounded error: {e}")
+
+                elif api_name == 'youcom' and (self.use_youcom or os.getenv('YDC_API_KEY')):
+                    self._report_progress("Searching You.com...", "search")
+                    if self.verbose:
+                        safe_print(f"    → Trying You.com...", end=" ", flush=True)
+                    try:
+                        metadata = self.youcom.search_paper(topic)
+                        if metadata and (metadata.get('doi') or metadata.get('url')):
+                            valid_results.append((metadata, "You.com"))
+                            self.source_usage_count["You.com"] = self.source_usage_count.get("You.com", 0) + 1
+                            if self.verbose:
+                                safe_print(f"✓")
+                        else:
+                            if self.verbose:
+                                safe_print(f"✗")
+                    except Exception as e:
+                        if self.verbose:
+                            safe_print(f"✗ Error: {e}")
+                        logger.error(f"You.com search error: {e}")
 
         # Try Gemini LLM as absolute last resort (not part of smart routing).
         # Disabled by default: nothing external checks what the LLM asserts.
@@ -1213,6 +1257,17 @@ class CitationResearcher:
                     return (metadata, source_name)
                 else:
                     logger.debug(f"  ✗ Gemini Grounded returned no results")
+
+            elif api_name == 'youcom' and hasattr(self, 'youcom') and (self.use_youcom or os.getenv('YDC_API_KEY')):
+                logger.debug(f"  → Calling You.com Search API...")
+                metadata = self.youcom.search_paper(topic)
+                if metadata:
+                    logger.info(
+                        f"  ✓ You.com found: {metadata.get('title', 'Unknown')[:80]}... (URL: {metadata.get('url', 'N/A')[:50]})"
+                    )
+                    return (metadata, "You.com")
+                else:
+                    logger.debug(f"  ✗ You.com returned no results")
 
             return (None, api_name)
 

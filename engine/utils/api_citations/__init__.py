@@ -7,6 +7,7 @@ from .orchestrator import CitationResearcher
 from .crossref import CrossrefClient
 from .openalex import OpenAlexClient
 from .semantic_scholar import SemanticScholarClient
+from .youcom_client import YoucomClient
 from .multi_source import (
     ConfirmationResult,
     MultiSourceConfirmer,
@@ -24,6 +25,7 @@ __all__ = [
     "CrossrefClient",
     "OpenAlexClient",
     "SemanticScholarClient",
+    "YoucomClient",
     "MultiSourceConfirmer",
     "ConfirmationResult",
     "SCHOLARLY_SOURCES",

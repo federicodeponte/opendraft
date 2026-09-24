@@ -4,13 +4,14 @@ Fallback Services for Web Search and Page Scraping
 
 Tools:
 - Serper.dev: Web search via Google SERP API (preferred)
+- You.com: Web search via You.com Search API (keyless or authenticated)
 - DataForSEO: Web search via SERP API (2000 RPM) (legacy fallback)
 - Firecrawl: Page scraping with JavaScript rendering (preferred)
 - OpenPull: Page scraping with JavaScript rendering (crawl4ai + Playwright) (legacy)
 - Simple fallback: Basic requests-based scraping for non-JS pages
 
 Usage:
-    from fallback_services import search_web_serper, scrape_page_with_firecrawl
+    from fallback_services import search_web_serper, search_web_youcom, scrape_page_with_firecrawl
     # Legacy:
     from fallback_services import search_web_dataforseo, scrape_page_with_openpull
 """
@@ -97,6 +98,50 @@ def search_web_serper(
     except Exception as e:
         logger.warning(f"Serper search failed: {e}, falling back to DataForSEO")
         return search_web_dataforseo(query, num_results)
+
+
+# ==============================================================================
+# You.com Web Search (Optional — Keyless or Authenticated)
+# ==============================================================================
+
+def search_web_youcom(
+    query: str,
+    num_results: int = 5,
+) -> Dict[str, Any]:
+    """
+    Search the web using You.com Search API.
+
+    Works in keyless mode (no API key needed) or authenticated mode
+    (YDC_API_KEY for higher rate limits).
+
+    Args:
+        query: Search query string
+        num_results: Number of results to return (default 5)
+
+    Returns:
+        Dict with 'success', 'results' (list of search results), and 'error' if failed
+
+    Environment Variables:
+        YDC_API_KEY: You.com API key (optional — keyless mode without it)
+        USE_YOUCOM: Set to 'true' to enable You.com search
+    """
+    try:
+        from utils.api_citations.youcom_client import YoucomClient
+
+        client = YoucomClient(num_results=num_results)
+        result = client.search_paper(query)
+
+        if result:
+            return {
+                "success": True,
+                "results": [result],  # Wrap single result in list for compatibility
+                "query": query
+            }
+        return {"success": False, "error": "No results found", "results": []}
+
+    except Exception as e:
+        logger.warning(f"You.com search failed: {e}")
+        return {"success": False, "error": str(e), "results": []}
 
 
 # ==============================================================================
