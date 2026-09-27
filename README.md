@@ -17,6 +17,10 @@
 </p>
 
 <p align="center">
+  <b>Use it inside your own AI agent, free: <a href="https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft">getedge.cc/skills/autonomous-research</a></b>
+</p>
+
+<p align="center">
   <sub>This repository is the open-source engine, MIT-licensed and self-hostable.</sub>
 </p>
 
@@ -454,9 +458,7 @@ Output: `paper_digest.mp3` - a professional narration summarizing the key points
 
 This engine also exists as a Skill, for agents that read Skills. Claude Code is one.
 
-```bash
-npx skills add getedgehq/skills --skill opendraft
-```
+**Get it on Edge: [getedge.cc/skills/autonomous-research](https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft)**
 
 Then say `Write a paper on <topic>` and the agent runs the pipeline itself.
 
