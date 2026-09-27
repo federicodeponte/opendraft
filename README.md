@@ -1,27 +1,20 @@
-<h1 align="center">OpenDraft — AI Research Draft Generator</h1>
-
 <p align="center">
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License">
-  <img src="https://img.shields.io/badge/Python-3.10+-blue.svg" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/Open%20Source-100%25-brightgreen.svg" alt="Open Source">
-  <img src="https://img.shields.io/github/stars/federicodeponte/opendraft?style=social" alt="GitHub stars">
+  <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/hero.png" width="100%" alt="OpenDraft, open-source research agent: one research question in, a cited draft out."></a>
 </p>
 
 <p align="center">
-  <b>Free, open-source autonomous research engine: auto research from a prompt to a source-grounded draft with citations checked against CrossRef, OpenAlex and Semantic Scholar.</b><br>
-  19 specialized agents · CrossRef, OpenAlex, Semantic Scholar · PDF/DOCX/LaTeX export
+  <a href="https://github.com/federicodeponte/opendraft/stargazers"><img src="https://img.shields.io/github/stars/federicodeponte/opendraft?style=flat&color=5b9dff" alt="GitHub stars"></a>
+  <a href="https://pypi.org/project/opendraft/"><img src="https://img.shields.io/pypi/v/opendraft?color=5b9dff" alt="PyPI version"></a>
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Human%20Review-Required-orange.svg" alt="Human Review Required">
+  Ask a research question. OpenDraft searches CrossRef, OpenAlex and Semantic Scholar, writes the draft,<br>
+  and keeps only sources whose DOI appears in at least two of those databases. Export to PDF, Word or LaTeX.
 </p>
 
 <p align="center">
-  <b>Use it inside your own AI agent, free: <a href="https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft">getedge.cc/skills/autonomous-research</a></b>
-</p>
-
-<p align="center">
-  <sub>This repository is the open-source engine, MIT-licensed and self-hostable.</sub>
+  <b>Use the OpenDraft research skill in your own AI agent, free → <a href="https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft">getedge.cc/skills/autonomous-research</a></b>
 </p>
 
 <p align="center">
