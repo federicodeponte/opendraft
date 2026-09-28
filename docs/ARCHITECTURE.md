@@ -28,13 +28,22 @@ Discover and analyze 50+ academic papers via multi-API cascade.
 | Scribe | `01_research/scribe.md` | Discovered papers | `scribe_output` (paper summaries) |
 | Signal | `01_research/signal.md` | All research | `signal_output` (gaps & trends) |
 
-**Citation API cascade** (managed by `CitationResearcher`):
-1. Semantic Scholar (DOI, title, authors, year, abstract)
-2. Crossref (DOI, title, authors, year, journal)
-3. Serper / Gemini Grounded Search (URL-based results)
-4. LLM Fallback (Gemini training data — last resort)
+**Citation discovery** (managed by `CitationResearcher`), which finds
+candidates. Any one source satisfies this stage; it establishes nothing on its
+own:
+1. Crossref / OpenAlex / Semantic Scholar (queried in parallel for academic topics)
+2. Serper / Gemini Grounded Search (URL-based results, usually no DOI)
+3. LLM fallback (Gemini training data). **Disabled by default**; output is
+   permanently tagged `llm_unverified`.
 
 `QueryRouter` classifies each query to pick the optimal starting API.
+
+**Citation confirmation** (`MultiSourceConfirmer`), which decides what is kept.
+Each candidate's DOI is looked up directly in Crossref, OpenAlex and Semantic
+Scholar. By default a candidate survives only if at least 2 of the 3 hold that
+DOI; single-source candidates are dropped. Every kept citation records
+`verification_status` and `verification_sources`. See the README section
+"Citation verification" for the full status vocabulary and its limits.
 
 ### Phase 2: Structure
 
@@ -45,14 +54,22 @@ Design and format the paper outline.
 | Architect | `02_structure/architect.md` | Topic + gaps + research | `architect_output` (outline) |
 | Formatter | `02_structure/formatter.md` | Outline + citation style | `formatter_output` (styled outline) |
 
-### Phase 2.5: Citation Management (deterministic)
+### Phase 2.5: Citation Management
 
-No LLM involved. Runs as pipeline code in `draft_generator.py`.
+Mostly deterministic; step 5 makes LLM judge calls. Runs as pipeline code in
+`draft_generator.py`.
 
 1. **Deduplicate** citations (fuzzy title + DOI matching)
 2. **Scrape titles** from URLs for citations missing metadata
 3. **Scrape metadata** (DOI lookup, CrossRef enrichment)
-4. **Build** `citation_database` + `citation_summary` with `{cite_XXX}` IDs
+4. **Quality filter** (`CitationQualityFilter`, strict mode) — broken URLs, junk
+   metadata, no topical keyword overlap
+5. **Claim-level verification** (`CitationClaimVerifier`) — judges each surviving
+   source against the paper topic and removes confidently off-topic ones.
+   Reports land in the research folder as `citation_claim_verification.md`/`.json`.
+   Existence of the source is already settled upstream by multi-source
+   confirmation; this is the separate question of relevance.
+6. **Build** `citation_database` + `citation_summary` with `{cite_XXX}` IDs
 
 ### Phase 3: Compose
 
@@ -134,7 +151,10 @@ draft_output/
 │   ├── papers/                 # Individual paper summaries (one per source)
 │   ├── combined_research.md    # Merged research findings
 │   ├── research_gaps.md        # Signal agent gap analysis
-│   └── bibliography.json       # Raw citation data from Scout
+│   ├── bibliography.json       # Citation data (carries verification_status +
+│   │                           #   verification_sources per citation)
+│   ├── citation_claim_verification.md    # Claim-level relevance report
+│   └── citation_claim_verification.json  # Per-citation verdicts
 │
 ├── drafts/                     # Phase 2-4 outputs
 │   ├── outline.md              # Architect output

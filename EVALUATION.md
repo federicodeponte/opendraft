@@ -12,6 +12,11 @@ OpenDraft is an open-source research drafting engine with 19 specialized agents.
 |--------|--------------|--------|
 | Citation duplication rate | ~0% (post-dedup fix) | <5% |
 | Verified citation rate | ~85% | >90% |
+
+> The ~85% figure was measured before multi-source confirmation became the
+> default and has not been re-measured since. It also used the older, weaker
+> meaning of "verified" (any one source answered). See "Citation verification"
+> in the README.
 | Hallucinated source rate | ~10-15% | <5% |
 | Average draft word count | 7,000-9,500 | Consistent |
 | Average unique citations | 15-22 | 18-25 |

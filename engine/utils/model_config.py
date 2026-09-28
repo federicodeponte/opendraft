@@ -24,7 +24,7 @@ class ModelPricing:
 # Pricing updated February 2026
 MODEL_PRICING: Dict[str, ModelPricing] = {
     # Gemini 3 family (Preview)
-    "gemini-3-pro-preview": ModelPricing(
+    "gemini-3.1-pro-preview": ModelPricing(
         input_price=2.00,
         output_price=12.00,
         name="Gemini 3 Pro Preview",
@@ -147,7 +147,7 @@ def get_model_pricing(model_name: str) -> Optional[ModelPricing]:
     """
     Look up pricing for a model name.
 
-    Supports partial matching: 'gemini-3-pro' matches 'gemini-3-pro-preview'.
+    Supports partial matching: 'gemini-3-pro' matches 'gemini-3.1-pro-preview'.
     Returns None if no match found.
     """
     # Exact match first

@@ -36,6 +36,7 @@ logs/
 tmp/
 temp/
 *.tmp
+WORKPLAN-*.md
 
 # Test outputs
 tests/outputs/

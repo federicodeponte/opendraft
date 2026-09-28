@@ -44,9 +44,11 @@ import sys
 import time
 import json
 import signal
+import os
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "engine"))
+REPO_ROOT = Path(os.environ.get("OPENDRAFT_TEST_REPO_ROOT", Path.cwd())).resolve()
+sys.path.insert(0, str(REPO_ROOT / "engine"))
 
 from utils.checkpoint import save_checkpoint, load_checkpoint, restore_context, get_next_phase, PHASES
 from utils.citation_database import Citation
@@ -151,7 +153,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     import os
-    os.chdir(Path(__file__).parent.parent)  # CD to opendraft root
+    os.chdir(REPO_ROOT)  # CD to opendraft root
 
     success = run_mock_pipeline(
         output_dir=Path(args.output_dir),
@@ -175,6 +177,12 @@ class TestTrueE2ESubprocessKill:
         script_path = tmp_path / "mock_pipeline.py"
         script_path.write_text(MOCK_PIPELINE_SCRIPT)
         return script_path
+
+    def _subprocess_env(self) -> dict:
+        """Return environment for mock pipeline subprocesses."""
+        env = os.environ.copy()
+        env["OPENDRAFT_TEST_REPO_ROOT"] = str(Path(__file__).parent.parent)
+        return env
 
     def _wait_for_phase(self, output_dir: Path, phase: str, timeout: float = 10.0) -> bool:
         """Wait for a phase to start (marker file appears)."""
@@ -210,6 +218,7 @@ class TestTrueE2ESubprocessKill:
             stderr=subprocess.PIPE,
             text=True,
             cwd=str(Path(__file__).parent.parent),
+            env=self._subprocess_env(),
         )
 
         try:
@@ -238,6 +247,7 @@ class TestTrueE2ESubprocessKill:
                 stderr=subprocess.PIPE,
                 text=True,
                 cwd=str(Path(__file__).parent.parent),
+                env=self._subprocess_env(),
             )
 
             stdout, _ = proc2.communicate(timeout=30)
@@ -258,6 +268,7 @@ class TestTrueE2ESubprocessKill:
             stderr=subprocess.PIPE,
             text=True,
             cwd=str(Path(__file__).parent.parent),
+            env=self._subprocess_env(),
         )
 
         try:
@@ -291,6 +302,7 @@ class TestTrueE2ESubprocessKill:
             stderr=subprocess.PIPE,
             text=True,
             cwd=str(Path(__file__).parent.parent),
+            env=self._subprocess_env(),
         )
 
         stdout, stderr = proc2.communicate(timeout=30)
@@ -313,6 +325,7 @@ class TestTrueE2ESubprocessKill:
             stderr=subprocess.PIPE,
             text=True,
             cwd=str(Path(__file__).parent.parent),
+            env=self._subprocess_env(),
         )
 
         try:
@@ -348,6 +361,7 @@ class TestTrueE2ESubprocessKill:
             stderr=subprocess.PIPE,
             text=True,
             cwd=str(Path(__file__).parent.parent),
+            env=self._subprocess_env(),
         )
 
         stdout, _ = proc2.communicate(timeout=30)
@@ -369,6 +383,7 @@ class TestTrueE2ESubprocessKill:
             stderr=subprocess.PIPE,
             text=True,
             cwd=str(Path(__file__).parent.parent),
+            env=self._subprocess_env(),
         )
 
         try:
@@ -410,6 +425,7 @@ class TestTrueE2ESubprocessKill:
                 stderr=subprocess.PIPE,
                 text=True,
                 cwd=str(Path(__file__).parent.parent),
+                env=self._subprocess_env(),
             )
 
             try:
@@ -443,6 +459,7 @@ class TestTrueE2ESubprocessKill:
             stderr=subprocess.PIPE,
             text=True,
             cwd=str(Path(__file__).parent.parent),
+            env=self._subprocess_env(),
         )
 
         stdout, _ = proc.communicate(timeout=60)

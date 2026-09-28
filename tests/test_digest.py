@@ -160,16 +160,17 @@ class TestDigestOutput:
         mock_response = Mock()
         mock_response.text = "This is a test digest script about research findings and their implications for the field."
 
-        with patch('digest.GeminiModelWrapper') as MockModel:
-            mock_instance = MockModel.return_value
-            mock_instance.generate_content.return_value = mock_response
+        with patch.dict(os.environ, {"GOOGLE_API_KEY": "test-key"}):
+            with patch('digest.GeminiModelWrapper') as MockModel:
+                mock_instance = MockModel.return_value
+                mock_instance.generate_content.return_value = mock_response
 
-            with patch('google.genai'):
-                result = generate_digest(
-                    doc,
-                    output_dir=output_dir,
-                    generate_audio=False  # Skip audio for unit test
-                )
+                with patch('google.genai'):
+                    result = generate_digest(
+                        doc,
+                        output_dir=output_dir,
+                        generate_audio=False  # Skip audio for unit test
+                    )
 
         assert "script" in result
         assert "script_path" in result

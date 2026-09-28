@@ -5,12 +5,21 @@ ABOUTME: Uses CrossRef API to verify DOIs, URL status checks, and metadata quali
 """
 
 import json
+import logging
 import re
 import requests
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
-from urllib.parse import urlparse
+
+from utils.retry import retry
+
+
+logger = logging.getLogger(__name__)
+
+
+class _RetryableCrossrefError(requests.HTTPError):
+    """CrossRef returned a transient status that should be retried."""
 
 
 @dataclass
@@ -36,6 +45,44 @@ class CitationValidator:
         self.timeout = timeout
         self.crossref_api_base = "https://api.crossref.org/works/"
 
+    @retry(
+        max_attempts=3,
+        base_delay=0.5,
+        max_delay=4.0,
+        exceptions=(
+            requests.exceptions.RequestException,
+            _RetryableCrossrefError,
+        ),
+    )
+    def _get_crossref_work(self, doi_clean: str) -> requests.Response:
+        """Fetch a CrossRef work, retrying transient failures with backoff."""
+        response = requests.get(
+            f"{self.crossref_api_base}{doi_clean}",
+            timeout=self.timeout,
+            headers={
+                'User-Agent': (
+                    'OpenDraft/1.3 '
+                    '(https://github.com/federicodeponte/opendraft)'
+                )
+            }
+        )
+
+        if response.status_code == 429 or response.status_code >= 500:
+            logger.warning(
+                (
+                    "CrossRef DOI validation got HTTP %s for %s; "
+                    "retrying if attempts remain"
+                ),
+                response.status_code,
+                doi_clean,
+            )
+            raise _RetryableCrossrefError(
+                f"CrossRef transient response: HTTP {response.status_code}",
+                response=response,
+            )
+
+        return response
+
     def validate_doi(self, doi: str) -> Optional[bool]:
         """
         Verify if a DOI exists via CrossRef API.
@@ -47,14 +94,13 @@ class CitationValidator:
             True if DOI exists, False if DOI not found (404), None if network error
         """
         # Clean DOI (remove prefix if present)
-        doi_clean = doi.replace('https://doi.org/', '').replace('http://doi.org/', '')
+        doi_clean = doi.replace('https://doi.org/', '').replace(
+            'http://doi.org/',
+            '',
+        )
 
         try:
-            response = requests.get(
-                f"{self.crossref_api_base}{doi_clean}",
-                timeout=self.timeout,
-                headers={'User-Agent': 'OpenDraft/1.3 (https://github.com/federicodeponte/opendraft)'}
-            )
+            response = self._get_crossref_work(doi_clean)
             return response.status_code == 200
         except requests.exceptions.RequestException:
             # Network error - assume DOI might be valid

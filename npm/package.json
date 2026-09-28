@@ -24,7 +24,7 @@
   "bugs": {
     "url": "https://github.com/federicodeponte/opendraft/issues"
   },
-  "homepage": "https://openpaper.dev",
+  "homepage": "https://openpaper.dev?utm_source=npm&utm_medium=package&utm_campaign=opendraft",
   "engines": {
     "node": ">=14.0.0"
   }

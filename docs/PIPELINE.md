@@ -193,29 +193,47 @@ Phase 5 outputs:
 
 ---
 
-## Citation Research Cascade (Scout Detail)
+## Citation Discovery and Confirmation (Scout Detail)
 
-Scout uses a multi-API cascade to find papers, managed by `CitationResearcher`:
+`CitationResearcher` runs two stages. Discovery finds candidates; confirmation
+decides which candidates are kept. Discovery alone proves nothing.
 
 ```
+STAGE 1 - DISCOVERY (any one source can answer)
+
 For each research topic:
 
-  1. Semantic Scholar  ──> DOI, title, authors, year, abstract
+  1. Crossref / OpenAlex / Semantic Scholar   (parallel for academic topics)
          |
-         | (if not enough results)
+         | (if nothing found)
          v
-  2. Crossref          ──> DOI, title, authors, year, journal
+  2. Serper / Gemini Grounded Search  ──> URL-based results, usually no DOI
+         |                                 (Serper preferred if USE_SERPER=true)
+         | (if all lookups fail)
+         v
+  3. LLM Fallback  ──> Gemini asserts a citation from training data.
+                       DISABLED BY DEFAULT. Nothing external checks it, so
+                       anything it produces is tagged `llm_unverified`.
+
+
+STAGE 2 - CONFIRMATION (default: 2 of 3 required)
+
+For each candidate carrying a DOI:
+
+  Look the DOI up directly in Crossref, OpenAlex and Semantic Scholar
          |
-         | (if not enough results)
          v
-  3. Serper / Gemini   ──> URL-based results with metadata
-     Grounded Search        (Serper preferred if USE_SERPER=true)
-         |
-         | (if all APIs fail)
-         v
-  4. LLM Fallback      ──> Gemini generates citation from training data
-                            (last resort, lower reliability)
+  >= min_confirming_sources hold it  ──> keep, `multi_source_confirmed`
+  exactly one holds it               ──> DROP, `single_source`
+  no DOI at all (web result)         ──> DROP unless
+                                         allow_unconfirmed_web_sources=True,
+                                         tagged `web_search_unconfirmed`
 ```
+
+Confirmation proves the DOI is registered and indexed in that many databases.
+It does not prove the work supports the claim it is cited for; that is
+`CitationClaimVerifier` in Phase 2.5. Note also that OpenAlex and Semantic
+Scholar both ingest Crossref metadata, so the three are not fully independent.
 
 Smart routing (`QueryRouter`) classifies each query to pick the best starting API:
 - Known-item queries (DOI, exact title) -> Crossref first

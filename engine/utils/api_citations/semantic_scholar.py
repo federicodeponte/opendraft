@@ -127,6 +127,48 @@ class SemanticScholarClient(BaseAPIClient):
             logger.error(f"SemanticScholar: Error parsing response: {e}")
             return None
 
+    def get_paper_by_doi(self, doi: str) -> Optional[Dict[str, Any]]:
+        """
+        Look up a single paper by its DOI.
+
+        Used by MultiSourceConfirmer to independently confirm that a work found
+        by one database also exists in Semantic Scholar. A DOI lookup is an
+        identity lookup, not a relevance search, so a hit means "S2 holds a
+        record for this exact DOI" and nothing more.
+
+        Args:
+            doi: Bare DOI string (e.g. "10.1038/nature12373"), no URL prefix
+
+        Returns:
+            Normalized metadata dict, or None if S2 has no record for it
+        """
+        if not doi:
+            return None
+
+        # S2 accepts the "DOI:<doi>" identifier form on the single-paper route.
+        response = self._make_request(
+            method="GET",
+            endpoint=f"/graph/v1/paper/DOI:{doi}",
+            params={
+                "fields": "title,authors,year,venue,externalIds,url,citationCount,publicationTypes,abstract",
+            },
+        )
+
+        if not response:
+            logger.debug(f"SemanticScholar: No record for DOI '{doi}'")
+            return None
+
+        try:
+            # The single-paper route returns the paper object directly (no
+            # "data" envelope), with the same field shape as a search hit.
+            if not isinstance(response, dict) or not response.get("title"):
+                logger.debug(f"SemanticScholar: Unexpected DOI response shape for '{doi}'")
+                return None
+            return self._extract_metadata(response)
+        except Exception as e:
+            logger.error(f"SemanticScholar: Error parsing DOI response for '{doi}': {e}")
+            return None
+
     def _extract_metadata(self, paper: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Extract and normalize paper metadata from Semantic Scholar response.

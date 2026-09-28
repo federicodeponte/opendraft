@@ -38,7 +38,9 @@ class CitationCompiler:
         self._nalt_footnote_counter = 0
         self._nalt_footnote_definitions: List[str] = []
 
-        # Initialize API-backed citation researcher (Crossref → Semantic Scholar → Gemini Grounded → Gemini LLM)
+        # Initialize API-backed citation researcher.
+        # Discovery: Crossref / OpenAlex / Semantic Scholar / Gemini Grounded.
+        # Confirmation: multi-source by DOI, on by default (see CitationResearcher).
         # Semantic Scholar can be disabled via env var if rate limited (403 errors)
         import os
         enable_semantic_scholar = os.environ.get('ENABLE_SEMANTIC_SCHOLAR', 'true').lower() != 'false'
@@ -48,16 +50,23 @@ class CitationCompiler:
             enable_crossref=True,
             enable_semantic_scholar=enable_semantic_scholar,
             enable_gemini_grounded=True,  # Enable Gemini Grounded for web sources
-            enable_llm_fallback=True,
+            # Was True. A {cite_MISSING:topic} placeholder is filled in mid-
+            # compilation and lands directly in the finished paper, so an
+            # LLM-asserted citation here would reach the reader unchecked.
+            # Left at the class default (off; explicit opt-in only).
+            enable_llm_fallback=False,
             verbose=False  # Will be overridden by method verbose parameter
         )
 
     def _research_missing_citation(self, topic: str, verbose: bool = True) -> Optional[Citation]:
         """
-        Research a missing citation using API-backed fallback chain.
+        Research a missing citation through the API-backed researcher.
 
-        Uses intelligent fallback: Crossref → Semantic Scholar → Gemini LLM
-        Success rate: 95%+ (vs 40% LLM-only)
+        Discovery runs across Crossref / OpenAlex / Semantic Scholar / web
+        search; the result is then kept only if its DOI is independently
+        confirmed in at least 2 scholarly databases (CitationResearcher's
+        default). The LLM fallback is disabled here, so this returns None
+        rather than inventing a citation when nothing can be confirmed.
 
         Args:
             topic: Topic or description to research

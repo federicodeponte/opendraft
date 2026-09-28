@@ -1,0 +1,5 @@
+# Ensure prompt markdown files ship in the sdist as well as the wheel.
+# (package-data in pyproject.toml covers the wheel; MANIFEST.in covers the sdist.)
+recursive-include prompts *.md
+graft prompts
+global-exclude __pycache__ *.py[cod]
