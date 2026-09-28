@@ -102,8 +102,9 @@ class CitationValidator:
         try:
             response = self._get_crossref_work(doi_clean)
             return response.status_code == 200
-        except requests.exceptions.RequestException:
+        except requests.exceptions.RequestException as exc:
             # Network error - assume DOI might be valid
+            logger.warning("CrossRef DOI validation failed after retries for %s: %s", doi_clean, exc)
             return None  # Unknown
 
     def check_author_sanity(self, authors: List[str]) -> List[str]:
