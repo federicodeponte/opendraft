@@ -140,6 +140,14 @@ MODEL_PRICING: Dict[str, ModelPricing] = {
         display_name="GPT-3.5 Turbo",
         provider="openai",
     ),
+    # Anthropic models
+    "claude-sonnet-4-5": ModelPricing(
+        input_price=3.00,
+        output_price=15.00,
+        name="Claude Sonnet 4.5",
+        display_name="Claude Sonnet 4.5",
+        provider="anthropic",
+    ),
 }
 
 

@@ -38,16 +38,19 @@ class ModelConfig:
     """
     Model configuration with sensible defaults.
 
-    Supports Gemini models with configurable parameters.
+    Supports Gemini, OpenAI, and Anthropic models with configurable parameters.
     """
-    provider: Literal['gemini', 'claude', 'openai'] = field(
+    provider: Literal['gemini', 'anthropic', 'claude', 'openai'] = field(
         default_factory=lambda: os.getenv('AI_PROVIDER', 'gemini')
     )
     model_name: str = field(
-        default_factory=lambda: (
-            os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
-            if os.getenv('AI_PROVIDER') == 'openai'
-            else os.getenv('GEMINI_MODEL', 'gemini-3.1-pro-preview')
+        default_factory=lambda: {
+            'openai': os.getenv('OPENAI_MODEL', 'gpt-4.1-nano'),
+            'anthropic': os.getenv('ANTHROPIC_MODEL', 'claude-sonnet-4-5'),
+            'claude': os.getenv('ANTHROPIC_MODEL', 'claude-sonnet-4-5'),
+        }.get(
+            os.getenv('AI_PROVIDER', 'gemini'),
+            os.getenv('GEMINI_MODEL', 'gemini-3.1-pro-preview'),
         )
     )
     temperature: float = 0.7
@@ -56,31 +59,10 @@ class ModelConfig:
 
     def __post_init__(self):
         """Validate model configuration."""
-        valid_gemini_models = [
-            'gemini-3.1-pro-preview',    # Pro model for complex tasks
-            'gemini-3-flash-preview',  # Primary flash model (supports JSON output)
-            'gemini-2.5-pro',          # Legacy support
-            'gemini-2.5-flash',        # Legacy support
-            'gemini-2.0-flash-exp',    # Legacy support
-            'gemini-1.5-flash',
-            'gemini-1.5-pro',
-        ]
-
-        valid_openai_models = [
-            'gpt-4.1-nano',
-        ]
-
-        if self.provider == 'gemini' and self.model_name not in valid_gemini_models:
-            raise ValueError(
-                f"Invalid Gemini model: {self.model_name}. "
-                f"Valid options: {', '.join(valid_gemini_models)}"
-            )
-
-        if self.provider == 'openai' and self.model_name not in valid_openai_models:
-            raise ValueError(
-                f"Invalid OpenAI model: {self.model_name}. "
-                f"Valid options: {', '.join(valid_openai_models)}"
-            )
+        if self.provider not in {'gemini', 'anthropic', 'claude', 'openai'}:
+            raise ValueError(f"Unsupported AI provider: {self.provider}")
+        if not self.model_name.strip():
+            raise ValueError("Model name cannot be empty")
 
 
 @dataclass
@@ -178,7 +160,7 @@ class AppConfig:
                 "Get your key at: https://makersuite.google.com/app/apikey"
             )
 
-        if self.model.provider == 'claude' and not self.anthropic_api_key:
+        if self.model.provider in {'anthropic', 'claude'} and not self.anthropic_api_key:
             raise ValueError("ANTHROPIC_API_KEY required for Claude models")
 
         if self.model.provider == 'openai' and not self.openai_api_key:
@@ -189,7 +171,7 @@ class AppConfig:
         """Check if required API key is configured (without raising)."""
         if self.model.provider == 'gemini':
             return bool(self.google_api_key)
-        if self.model.provider == 'claude':
+        if self.model.provider in {'anthropic', 'claude'}:
             return bool(self.anthropic_api_key)
         if self.model.provider == 'openai':
             return bool(self.openai_api_key)
