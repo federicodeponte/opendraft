@@ -38,7 +38,7 @@ def setup_model():
     """Setup Gemini model"""
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     client = genai.Client(api_key=api_key)
-    model_name = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+    model_name = os.environ.get("GEMINI_MODEL", "gemini-3-flash-preview")
     return GeminiModelWrapper(client, model_name)
 
 

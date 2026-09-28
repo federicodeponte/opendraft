@@ -8,7 +8,7 @@ import re
 logger = logging.getLogger(__name__)
 
 
-def count_tokens(text: str, model_name: str = "gemini-2.0-flash") -> int:
+def count_tokens(text: str, model_name: str = "gemini-3-flash-preview") -> int:
     """
     Count tokens in text using the appropriate method for the model.
 
@@ -35,7 +35,7 @@ def count_tokens(text: str, model_name: str = "gemini-2.0-flash") -> int:
         return _count_fallback_tokens(text)
 
 
-def count_prompt_tokens(prompt: str, model_name: str = "gemini-2.0-flash") -> int:
+def count_prompt_tokens(prompt: str, model_name: str = "gemini-3-flash-preview") -> int:
     """
     Count tokens specifically for a prompt.
 
@@ -49,7 +49,7 @@ def count_prompt_tokens(prompt: str, model_name: str = "gemini-2.0-flash") -> in
     return count_tokens(prompt, model_name)
 
 
-def count_response_tokens(response: str, model_name: str = "gemini-2.0-flash") -> int:
+def count_response_tokens(response: str, model_name: str = "gemini-3-flash-preview") -> int:
     """
     Count tokens specifically for a response.
 
@@ -163,7 +163,7 @@ def _count_fallback_tokens(text: str) -> int:
 
 
 def estimate_tokens_in_messages(
-    messages: list, model_name: str = "gemini-2.0-flash"
+    messages: list, model_name: str = "gemini-3-flash-preview"
 ) -> int:
     """
     Estimate total tokens in a list of messages.
@@ -203,7 +203,7 @@ if __name__ == "__main__":
 
     # Test with Gemini
     try:
-        gemini_count = count_tokens(test_text, "gemini-2.0-flash")
+        gemini_count = count_tokens(test_text, "gemini-3-flash-preview")
         print(f"Gemini token count: {gemini_count}")
     except Exception as e:
         print(f"Gemini counting failed: {e}")

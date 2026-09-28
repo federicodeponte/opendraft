@@ -37,7 +37,7 @@ def setup_model():
     if not api_key:
         raise ValueError("No API key found")
     client = genai.Client(api_key=api_key)
-    model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
     return GeminiModelWrapper(client, model_name)
 
 
