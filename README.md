@@ -547,15 +547,14 @@ See `engine/README.md` for detailed API documentation.
 
 ## Which AI Model Should I Use?
 
-| Model | Speed | Quality | Cost/Draft | Best For |
-|-------|-------|---------|------------|----------|
-| **Gemini 3 Flash** | ⚡ Fast | Good | ~$0.35 | Most users |
-| Gemini 3 Pro | Medium | Excellent | ~$1.40 | Important papers |
-| GPT-5.2 | Medium | Excellent | ~$1.60 | OpenAI users |
-| Claude Sonnet 4.5 | Medium | Excellent | ~$1.80 | Nuanced writing |
-| Claude Opus 4.5 | Slow | Best | ~$3.00 | Maximum quality |
+| Model | Provider | Configuration |
+|-------|----------|---------------|
+| **Gemini 3.1 Pro Preview** | Gemini (default) | `AI_PROVIDER=gemini` |
+| Gemini 3 Flash Preview | Gemini | `GEMINI_MODEL=gemini-3-flash-preview` |
+| GPT-4.1 Nano | OpenAI | `AI_PROVIDER=openai` and `OPENAI_API_KEY` |
+| Claude Sonnet 4.6 | Anthropic | `AI_PROVIDER=claude` and `ANTHROPIC_API_KEY` |
 
-**Recommendation:** Start with Gemini 3 Flash for most use cases. Use Gemini 3 Pro or Claude Sonnet 4.5 for important papers.
+Set `OPENAI_MODEL` or `ANTHROPIC_MODEL` to use another model supported by your API endpoint.
 
 ---
 

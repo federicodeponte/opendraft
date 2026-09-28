@@ -58,33 +58,26 @@ logger = logging.getLogger(__name__)
 
 
 def setup_model(model_override: Optional[str] = None) -> Any:
-    """
-    Initialize and return configured Gemini model wrapper.
-
-    Args:
-        model_override: Optional model name to override config default
-
-    Returns:
-        GeminiModelWrapper: Configured model wrapper with generate_content() method
-
-    Raises:
-        ValueError: If API key is missing or model name is invalid
-    """
+    """Initialize the provider selected by AI_PROVIDER."""
     config = get_config()
+    config.validate_api_keys()
+    model_name = model_override or config.model.model_name
+    temperature = config.model.temperature
 
-    if not config.google_api_key:
-        raise ValueError(
-            "GOOGLE_API_KEY not found. Set it in .env file or environment variables."
-        )
+    if config.model.provider == "claude":
+        from anthropic import Anthropic
+        from utils.provider_adapters import ClaudeModelWrapper
+        client = Anthropic(api_key=config.anthropic_api_key, base_url=config.anthropic_base_url)
+        return ClaudeModelWrapper(client, model_name, temperature)
+
+    if config.model.provider == "openai":
+        from openai import OpenAI
+        from utils.provider_adapters import OpenAIModelWrapper
+        client = OpenAI(api_key=config.openai_api_key, base_url=config.openai_base_url)
+        return OpenAIModelWrapper(client, model_name, temperature)
 
     client = genai.Client(api_key=config.google_api_key)
-    model_name = model_override or config.model.model_name
-
-    return GeminiModelWrapper(
-        client=client,
-        model_name=model_name,
-        temperature=config.model.temperature,
-    )
+    return GeminiModelWrapper(client=client, model_name=model_name, temperature=temperature)
 
 
 def _load_prompt_via_resources(prompt_path: str) -> Optional[str]:
@@ -905,14 +898,16 @@ def research_citations_via_api(
     # Semantic Scholar can be disabled via env var if rate limited (403 errors)
     enable_semantic_scholar = os.environ.get('ENABLE_SEMANTIC_SCHOLAR', 'true').lower() != 'false'
 
+    has_serper = bool(os.getenv("SERPER_API_KEY"))
+    has_google = bool(get_config().google_api_key)
     researcher = CitationResearcher(
         gemini_model=model,
         enable_crossref=True,
         enable_semantic_scholar=enable_semantic_scholar,
-        enable_gemini_grounded=True,  # Enable for industry reports (McKinsey, Gartner, etc.)
+        enable_gemini_grounded=has_serper or has_google,
         enable_smart_routing=True,     # Enable query classification for source diversity
         enable_llm_fallback=False,     # DISABLED: LLM hallucinates citations
-        use_serper=True,               # Enable Serper API for web search fallback
+        use_serper=has_serper,
         verbose=verbose,
         progress_callback=progress_callback,  # Pass through for progress reporting
     )

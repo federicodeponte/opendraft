@@ -38,18 +38,18 @@ class ModelConfig:
     """
     Model configuration with sensible defaults.
 
-    Supports Gemini models with configurable parameters.
+    Supports Gemini, OpenAI and Claude models with configurable parameters.
     """
     provider: Literal['gemini', 'claude', 'openai'] = field(
         default_factory=lambda: os.getenv('AI_PROVIDER', 'gemini')
     )
-    model_name: str = field(
-        default_factory=lambda: (
-            os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
-            if os.getenv('AI_PROVIDER') == 'openai'
-            else os.getenv('GEMINI_MODEL', 'gemini-3.1-pro-preview')
-        )
-    )
+    model_name: str = field(default_factory=lambda: (
+        os.getenv('ANTHROPIC_MODEL') or os.getenv('CLAUDE_MODEL') or 'claude-sonnet-4-6'
+        if os.getenv('AI_PROVIDER') == 'claude'
+        else os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
+        if os.getenv('AI_PROVIDER') == 'openai'
+        else os.getenv('GEMINI_MODEL', 'gemini-3.1-pro-preview')
+    ))
     temperature: float = 0.7
     max_output_tokens: Optional[int] = None
     api_key: Optional[str] = None
@@ -63,21 +63,16 @@ class ModelConfig:
             'gemini-2.5-flash',        # Legacy support
         ]
 
-        valid_openai_models = [
-            'gpt-4.1-nano',
-        ]
-
         if self.provider == 'gemini' and self.model_name not in valid_gemini_models:
             raise ValueError(
                 f"Invalid Gemini model: {self.model_name}. "
                 f"Valid options: {', '.join(valid_gemini_models)}"
             )
 
-        if self.provider == 'openai' and self.model_name not in valid_openai_models:
-            raise ValueError(
-                f"Invalid OpenAI model: {self.model_name}. "
-                f"Valid options: {', '.join(valid_openai_models)}"
-            )
+        if self.provider not in ('gemini', 'openai', 'claude'):
+            raise ValueError(f"Unsupported AI provider: {self.provider}")
+        if not self.model_name.strip():
+            raise ValueError(f"Model name required for {self.provider}")
 
 
 @dataclass
@@ -145,6 +140,8 @@ class AppConfig:
     google_api_key_fallback_3: str = field(default_factory=lambda: os.getenv('GOOGLE_API_KEY_FALLBACK_3', ''))
     anthropic_api_key: str = field(default_factory=lambda: os.getenv('ANTHROPIC_API_KEY', ''))
     openai_api_key: str = field(default_factory=lambda: os.getenv('OPENAI_API_KEY', ''))
+    anthropic_base_url: str = field(default_factory=lambda: os.getenv('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'))
+    openai_base_url: str = field(default_factory=lambda: os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1'))
 
     # Sub-configurations
     model: ModelConfig = field(default_factory=ModelConfig)
