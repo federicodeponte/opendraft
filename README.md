@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/hero.png" width="100%" alt="OpenDraft, open-source research agent: one research question in, a cited draft out."></a>
+  <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/hero.png" width="100%" alt="OpenDraft: 459 GitHub stars, #1 on Google for open source research paper generator, 22k+ downloads"></a>
 </p>
 
 <p align="center">
