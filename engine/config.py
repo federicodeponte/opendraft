@@ -61,9 +61,6 @@ class ModelConfig:
             'gemini-3-flash-preview',  # Primary flash model (supports JSON output)
             'gemini-2.5-pro',          # Legacy support
             'gemini-2.5-flash',        # Legacy support
-            'gemini-2.0-flash-exp',    # Legacy support
-            'gemini-1.5-flash',
-            'gemini-1.5-pro',
         ]
 
         valid_openai_models = [
