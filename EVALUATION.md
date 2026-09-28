@@ -49,6 +49,19 @@ OpenDraft is an open-source research drafting engine with 19 specialized agents.
 - Check if canonical papers appear in retrieved set
 - Score: `recall@k` for k=10, 20, 50
 
+Use `data/eval_topics.json` as the fixed topic set for this benchmark.
+
+**Topic schema:**
+
+Each benchmark topic includes:
+
+- `id`: stable slug for reports and regression baselines
+- `domain`: broad research area used for stratified evaluation
+- `topic`: short human-readable topic name
+- `prompt`: generation prompt used by evaluation scripts
+- `canonical_sources`: expected papers/books/articles with title, authors, year, and DOI or arXiv ID when available
+- `expected_terms`: keywords that should appear in a well-covered research phase or draft
+
 ### 3. Hallucination Detection
 
 **Goal:** Identify claims in the draft that lack supporting sources.
