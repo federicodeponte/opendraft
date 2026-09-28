@@ -4,12 +4,12 @@
 
 # === LLM APIs ===
 anthropic>=0.20.0,<1.0.0
-openai>=1.0.0,<2.0.0
+openai>=1.0.0,<3.0.0
 google-genai>=1.0.0,<2.0.0  # Gemini SDK
 
 # === Citation Management ===
-pybtex>=0.24.0,<0.25.0      # BibTeX parsing/generation
-citeproc-py>=0.6.0,<0.7.0   # Citation formatting (APA, MLA, Chicago, IEEE)
+pybtex>=0.24.0,<0.26.0      # BibTeX parsing/generation
+citeproc-py>=0.6.0,<0.10.0  # Citation formatting (APA, MLA, Chicago, IEEE)
 PyYAML>=6.0.0,<7.0.0        # YAML frontmatter parsing
 
 # === Document Export ===
@@ -20,10 +20,10 @@ python-docx>=1.0.0,<2.0.0   # Word document generation
 # === HTTP Client & Web Scraping ===
 requests>=2.31.0,<3.0.0     # For CrossRef API, GPTZero API, web scraping
 beautifulsoup4>=4.12.0,<5.0.0  # HTML parsing for title/metadata scraping
-lxml>=4.9.0,<6.0.0          # Fast XML/HTML parser for BeautifulSoup
+lxml>=4.9.0,<7.0.0          # Fast XML/HTML parser for BeautifulSoup
 
 # === Utilities ===
 python-dotenv>=1.0.0,<2.0.0 # Load .env files
-rich>=13.0.0,<14.0.0        # Pretty terminal output (for scripts)
-psutil>=5.9.0,<7.0.0        # System monitoring for health checks
+rich>=13.0.0,<15.0.0        # Pretty terminal output (for scripts)
+psutil>=5.9.0,<8.0.0        # System monitoring for health checks
 tenacity>=8.2.0,<10.0.0    # Production-grade retry with exponential backoff
