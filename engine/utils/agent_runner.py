@@ -66,13 +66,13 @@ def setup_model(model_override: Optional[str] = None) -> Any:
 
     if config.model.provider == "claude":
         from anthropic import Anthropic
-        from utils.provider_adapters import ClaudeModelWrapper
+        from .provider_adapters import ClaudeModelWrapper
         client = Anthropic(api_key=config.anthropic_api_key, base_url=config.anthropic_base_url)
         return ClaudeModelWrapper(client, model_name, temperature)
 
     if config.model.provider == "openai":
         from openai import OpenAI
-        from utils.provider_adapters import OpenAIModelWrapper
+        from .provider_adapters import OpenAIModelWrapper
         client = OpenAI(api_key=config.openai_api_key, base_url=config.openai_base_url)
         return OpenAIModelWrapper(client, model_name, temperature)
 
