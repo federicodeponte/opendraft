@@ -46,6 +46,7 @@ def run_research_phase(ctx: DraftContext) -> None:
     ]
     if ctx.blurb:
         research_topics.insert(0, f"{ctx.topic} - {ctx.blurb}")
+    research_topics = list(ctx.user_sources) + research_topics
 
     # -----------------------------------------------------------------------
     # AGENT: Scout
@@ -66,7 +67,8 @@ def run_research_phase(ctx: DraftContext) -> None:
             verbose=ctx.verbose,
             use_deep_research=True,
             topic=ctx.topic,
-            scope=ctx.topic,
+            scope=topic_context + ctx.user_material,
+            seed_references=ctx.user_sources,
             min_sources_deep=deep_research_min,
             progress_callback=progress_callback,
         )
@@ -91,6 +93,22 @@ def run_research_phase(ctx: DraftContext) -> None:
             ctx.tracker.update_research(sources_count=ctx.scout_result['count'], phase_detail="Scout completed")
 
         ctx.scout_output = (ctx.folders['research'] / "scout_raw.md").read_text(encoding='utf-8')
+        from utils.citation_database import Citation
+        known = {c.title.casefold() for c in ctx.scout_result["citations"]}
+        for source in ctx.user_sources:
+            if source.casefold() not in known:
+                supplied = Citation(
+                    citation_id="", authors=["User supplied"], year=0, title=source,
+                    source_type="report", api_source="User supplied",
+                )
+                supplied.verification_status = "user_supplied"
+                supplied.verification_notes = "Provided by user; scholarly metadata not independently confirmed"
+                ctx.scout_result["citations"].append(supplied)
+        ctx.scout_result["count"] = len(ctx.scout_result["citations"])
+        ctx.scout_output += "\n\n## User supplied sources\n" + "\n".join(
+            f"- {source}" for source in ctx.user_sources
+        ) + ctx.user_material
+        (ctx.folders["research"] / "scout_raw.md").write_text(ctx.scout_output, encoding="utf-8")
 
     except ValueError as e:
         raise ValueError(f"Insufficient citations for draft generation: {str(e)}")
@@ -107,7 +125,7 @@ def run_research_phase(ctx: DraftContext) -> None:
         model=ctx.model,
         name="Scribe - Summarize Papers",
         prompt_path="prompts/01_research/scribe.md",
-        user_input=f"Summarize these research findings:\n\n{smart_truncate(ctx.scout_output, max_chars=32000, preserve_json=True)}",
+        user_input=f"Summarize these research findings:\n\n{smart_truncate(ctx.scout_output, max_chars=32000, preserve_json=True)}\n\nRequired user sources: {ctx.user_sources}\n{ctx.user_material}",
         save_to=ctx.folders['research'] / "combined_research.md",
         skip_validation=ctx.skip_validation,
         verbose=ctx.verbose,
@@ -144,7 +162,7 @@ def run_research_phase(ctx: DraftContext) -> None:
         model=ctx.model,
         name="Signal - Research Gaps",
         prompt_path="prompts/01_research/signal.md",
-        user_input=f"Analyze research gaps:\n\n{smart_truncate(ctx.scribe_output, max_chars=32000)}",
+        user_input=f"Analyze research gaps:\n\n{smart_truncate(ctx.scribe_output, max_chars=32000)}\n{ctx.user_material}",
         save_to=ctx.folders['research'] / "research_gaps.md",
         skip_validation=ctx.skip_validation,
         verbose=ctx.verbose,

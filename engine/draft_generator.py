@@ -380,6 +380,18 @@ def get_word_count_targets(academic_level: str) -> dict:
     return targets.get(academic_level, targets['master'])
 
 
+def scale_citation_target(word_targets: dict, words_per_citation: int) -> dict:
+    """Require one distinct source per configured number of target words."""
+    from math import ceil
+    if words_per_citation <= 0:
+        raise ValueError("WORDS_PER_CITATION must be positive")
+    targets = word_targets.copy()
+    target_words = int(targets["total"].split("-")[-1].replace(",", ""))
+    targets["min_citations"] = max(targets["min_citations"], ceil(target_words / words_per_citation))
+    targets["deep_research_min_sources"] = max(targets["deep_research_min_sources"], targets["min_citations"])
+    return targets
+
+
 class PipelineValidationError(ValueError):
     """Raised when inter-phase validation fails."""
     pass
@@ -395,9 +407,8 @@ def validate_research_phase(ctx: 'DraftContext') -> None:
         raise PipelineValidationError("Research phase failed: no citations found")
 
     min_citations = ctx.word_targets.get('min_citations', 10)
-    # Allow proceeding with fewer citations, but warn
-    if len(citations) < min_citations // 2:
-        logger.warning(f"Research found only {len(citations)} citations (target: {min_citations})")
+    if len(citations) < min_citations:
+        raise PipelineValidationError(f"Research found {len(citations)} citations; {min_citations} required for target length")
 
 
 def validate_structure_phase(ctx: 'DraftContext') -> None:
@@ -418,6 +429,12 @@ def validate_citation_phase(ctx: 'DraftContext') -> None:
     if not ctx.citation_database.citations:
         raise PipelineValidationError("Citation phase failed: no citations in database")
 
+    minimum = ctx.word_targets.get("min_citations", 10)
+    if len(ctx.citation_database.citations) < minimum:
+        raise PipelineValidationError(
+            f"Only {len(ctx.citation_database.citations)} sources survived validation; {minimum} required"
+        )
+
     if not ctx.citation_summary:
         logger.warning("Citation summary is empty - writers may not cite correctly")
 
@@ -433,6 +450,17 @@ def validate_compose_phase(ctx: 'DraftContext') -> None:
 
     if filled_sections == 0:
         raise PipelineValidationError("Compose phase failed: no body sections generated")
+
+    complete_text = "\n".join((ctx.intro_output, ctx.lit_review_output, ctx.methodology_output,
+                                ctx.results_output, ctx.discussion_output, ctx.conclusion_output))
+    actual_words = len(complete_text.split())
+    from math import ceil
+    minimum = ceil(actual_words / ctx.config.words_per_citation)
+    used = set(re.findall(r"\{(cite_\d+)\}", complete_text))
+    if len(used) < minimum:
+        raise PipelineValidationError(
+            f"Draft cites {len(used)} unique sources across {actual_words} words; {minimum} required"
+        )
 
 
 def copy_tools_to_output(tools_dir: Path, topic: str, academic_level: str, verbose: bool = True):
@@ -504,6 +532,8 @@ def generate_draft(
     student_id: Optional[str] = None,
     citation_style: str = "apa",
     resume_from: Optional[Path] = None,
+    user_sources: Optional[List[str]] = None,
+    context_files: Optional[List[Path]] = None,
 ) -> Tuple[Path, Path]:
     """
     Generate a complete academic draft using specialized AI agents.
@@ -605,8 +635,13 @@ def generate_draft(
         if verbose and not cli_quiet_mode:
             print(f"📁 Output folder: {output_dir}")
 
+        from utils.document_reader import read_document
+        user_material = "\n\nUSER SUPPLIED CONTEXT (incorporate this material):\n" + "\n\n".join(
+            f"[{Path(path).name}]\n{read_document(Path(path))}" for path in (context_files or [])
+        ) if context_files else ""
+
         # Prepare word targets and language
-        word_targets = get_word_count_targets(academic_level)
+        word_targets = scale_citation_target(get_word_count_targets(academic_level), config.words_per_citation)
         language_name = get_language_name(language)
         language_instruction = f"\n\n**LANGUAGE REQUIREMENT:** Write the ENTIRE output in {language_name}. All text, headings, and content must be in {language_name}."
 
@@ -622,6 +657,8 @@ def generate_draft(
             skip_validation=skip_validation,
             verbose=verbose,
             blurb=blurb,
+            user_sources=list(user_sources or []),
+            user_material=user_material,
             author_name=author_name,
             institution=institution,
             department=department,

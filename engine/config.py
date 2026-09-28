@@ -153,6 +153,7 @@ class AppConfig:
 
     # Citation and paper settings
     citation_style: str = field(default_factory=lambda: os.getenv('CITATION_STYLE', 'apa'))
+    words_per_citation: int = field(default_factory=lambda: int(os.getenv('WORDS_PER_CITATION', '400')))
     ai_detection_threshold: float = field(default_factory=lambda: float(os.getenv('AI_DETECTION_THRESHOLD', '0.20')))
 
     def __post_init__(self):
