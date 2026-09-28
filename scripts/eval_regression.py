@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_TOPICS = Path("data/eval_topics.json")
+DEFAULT_TOPICS = Path(__file__).resolve().parent.parent / "data" / "eval_topics.json"
 DEFAULT_OUTPUT = Path("reports/regression_current.json")
 DEFAULT_DRAFTS_DIR = Path("reports/eval_drafts")
 DEFAULT_GENERATE_COMMAND = "opendraft {topic_quoted} --output {output_dir_quoted}"
