@@ -46,6 +46,8 @@ def save_checkpoint(ctx: 'DraftContext', phase: str, checkpoint_dir: Path) -> Pa
         "skip_validation": ctx.skip_validation,
         "verbose": ctx.verbose,
         "blurb": ctx.blurb,
+        "user_sources": ctx.user_sources,
+        "user_material": ctx.user_material,
 
         # Academic metadata
         "author_name": ctx.author_name,
@@ -134,6 +136,8 @@ def restore_context(ctx: 'DraftContext', checkpoint_data: Dict[str, Any]) -> Non
     ctx.skip_validation = checkpoint_data.get("skip_validation", ctx.skip_validation)
     ctx.verbose = checkpoint_data.get("verbose", ctx.verbose)
     ctx.blurb = checkpoint_data.get("blurb", ctx.blurb)
+    ctx.user_sources = checkpoint_data.get("user_sources", ctx.user_sources)
+    ctx.user_material = checkpoint_data.get("user_material", ctx.user_material)
 
     # Restore academic metadata
     ctx.author_name = checkpoint_data.get("author_name")

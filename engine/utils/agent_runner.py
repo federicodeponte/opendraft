@@ -767,7 +767,7 @@ def research_citations_via_api(
                     )
 
             # Extract queries as research topics
-            research_topics = research_plan.get('queries', [])
+            research_topics = list(dict.fromkeys((seed_references or []) + (research_topics or []) + research_plan.get('queries', [])))
 
             if verbose:
                 safe_print(f"\n✅ Research Plan Created:")
@@ -890,6 +890,8 @@ def research_citations_via_api(
                 safe_print(f"   Generated {len(research_topics)} fallback queries")
                 safe_print()
 
+    research_topics = list(dict.fromkeys((seed_references or []) + (research_topics or [])))
+
     # Execution Phase: Run queries through API fallback chain
     if verbose:
         safe_print(f"\n📊 Execution Configuration:")
@@ -964,7 +966,7 @@ def research_citations_via_api(
             return (idx, research_topic, [], str(e))
 
     # Early stopping at 50 citations
-    early_stop_threshold = 50
+    early_stop_threshold = max(target_minimum, 50)
 
     # Parallel or sequential based on config
     if PARALLEL_WORKERS > 1:
@@ -1119,6 +1121,38 @@ def research_citations_via_api(
                 if verbose:
                     safe_print(f"    ❌ Error: {str(e)}")
                 logger.error(f"Citation research failed for '{research_topic}': {str(e)}")
+
+    # Count distinct works, then broaden the search if the planned queries fell short.
+    def unique_works(items):
+        seen = set()
+        result = []
+        for item in items:
+            key = (item.doi or item.title).strip().casefold()
+            if key and key not in seen:
+                seen.add(key)
+                result.append(item)
+        return result
+
+    citations = unique_works(citations)
+    if len(citations) < target_minimum:
+        followups = [
+            f"{topic or research_topics[0]} {angle} scholarly literature"
+            for angle in ("systematic review", "recent studies", "empirical evidence",
+                          "methods", "dataset", "survey", "regional comparison",
+                          "longitudinal", "meta analysis", "contradictory findings")
+        ]
+        for query in followups:
+            if len(citations) >= target_minimum:
+                break
+            try:
+                citations = unique_works(citations + researcher.research_citation(query))
+            except Exception as exc:
+                logger.warning("Follow-up source search failed for %s: %s", query, exc)
+
+    if len(citations) < target_minimum:
+        raise ValueError(
+            f"Research found {len(citations)} unique sources; {target_minimum} required for target length"
+        )
 
     # Calculate success metrics
     citation_count = len(citations)

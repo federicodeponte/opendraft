@@ -47,6 +47,7 @@ def run_structure_phase(ctx: DraftContext) -> None:
     outline_context = f"Create draft outline for: {ctx.topic}"
     if ctx.blurb:
         outline_context += f"\n\nFocus/Context: {ctx.blurb}"
+    outline_context += ctx.user_material
     outline_context += f"\n\nResearch gaps:\n{ctx.signal_output[:2000]}\n\nLength: {total_words} words ({doc_type}, {chapters_info} chapters)"
 
     ctx.architect_output = run_agent(

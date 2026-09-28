@@ -1131,6 +1131,9 @@ def main():
         help="Research focus/context (optional)"
     )
 
+    parser.add_argument("--source", action="append", default=[], help="Required source (repeatable)")
+    parser.add_argument("--context-file", type=Path, action="append", default=[], help="Survey or other context file (repeatable)")
+
     parser.add_argument(
         "--lang",
         type=str,
@@ -1285,6 +1288,8 @@ def main():
             skip_validation=True,
             verbose=True,
             blurb=args.blurb if args.blurb else None,
+            user_sources=args.source,
+            context_files=args.context_file,
             output_type=output_type,
             author_name=args.author,
             institution=args.institution,

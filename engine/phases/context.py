@@ -29,6 +29,8 @@ class DraftContext:
     skip_validation: bool = True
     verbose: bool = True
     blurb: Optional[str] = None
+    user_sources: List[str] = field(default_factory=list)
+    user_material: str = ""
 
     # Academic metadata (optional, for cover page)
     author_name: Optional[str] = None

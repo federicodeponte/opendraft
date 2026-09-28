@@ -91,7 +91,7 @@ Outline:
 1. Write {intro_target} words minimum
 2. Include at least 1-2 tables (if relevant)
 3. **Table constraints**: Maximum 300 chars per cell, maximum 5 columns
-4. Put table details in prose paragraphs AFTER tables, not inside cells{ctx.language_instruction}""",
+4. Put table details in prose paragraphs AFTER tables, not inside cells{ctx.language_instruction}{ctx.user_material}""",
             save_to=ctx.folders['drafts'] / "01_introduction.md",
             skip_validation=ctx.skip_validation,
             verbose=ctx.verbose,
@@ -177,7 +177,7 @@ Outline context:
 - Evolution of the field
 - Research gaps that your draft will address
 
-**Use the abstracts provided to write evidence-based literature review with specific findings, NOT generic statements.**{ctx.language_instruction}""",
+**Use the abstracts provided to write evidence-based literature review with specific findings, NOT generic statements.**{ctx.language_instruction}{ctx.user_material}""",
             save_to=ctx.folders['drafts'] / "02_1_literature_review.md",
             skip_validation=ctx.skip_validation,
             verbose=ctx.verbose,
@@ -271,7 +271,7 @@ Outline:
 - Tools and technologies used - from literature, not "we used"
 - Study limitations and considerations - theoretical discussion
 
-**Connect to Literature Review:** "To address the gap identified in section 2.1 regarding X, a potential methodology could follow approaches described in {{cite_XXX}}..."**{ctx.language_instruction}""",
+**Connect to Literature Review:** "To address the gap identified in section 2.1 regarding X, a potential methodology could follow approaches described in {{cite_XXX}}..."**{ctx.language_instruction}{ctx.user_material}""",
             save_to=ctx.folders['drafts'] / "02_2_methodology.md",
             skip_validation=ctx.skip_validation,
             verbose=ctx.verbose,
@@ -366,7 +366,7 @@ Research data:
 - Visual data presentation (tables summarizing findings from cited sources)
 - Comparison with baseline/benchmarks FROM CITED RESEARCH
 
-**Connect sections:** "Research applying methodologies similar to those described in section 2.2 has found..." and "These findings from the literature relate to the theoretical framework in section 2.1..."**{ctx.language_instruction}""",
+**Connect sections:** "Research applying methodologies similar to those described in section 2.2 has found..." and "These findings from the literature relate to the theoretical framework in section 2.1..."**{ctx.language_instruction}{ctx.user_material}""",
             save_to=ctx.folders['drafts'] / "02_3_analysis_results.md",
             skip_validation=ctx.skip_validation,
             verbose=ctx.verbose,
@@ -465,7 +465,7 @@ You MUST include these explicit phrases to connect back to previous sections:
 
 **Example opening:** "The findings FROM LITERATURE synthesized in section 2.3 reveal significant insights that both align with and extend the theoretical frameworks discussed in section 2.1. As noted in the literature review (section 2.1), previous studies by [Author] {{cite_001}} demonstrated [X]; research findings {{cite_002}}{{cite_003}} confirm this relationship while also revealing [new insight]."
 
-**Remember:** Explicitly reference "section 2.1" at least 3-5 times throughout the Discussion to maintain strong academic coherence. ALWAYS cite sources for any findings discussed.**{ctx.language_instruction}""",
+**Remember:** Explicitly reference "section 2.1" at least 3-5 times throughout the Discussion to maintain strong academic coherence. ALWAYS cite sources for any findings discussed.**{ctx.language_instruction}{ctx.user_material}""",
             save_to=ctx.folders['drafts'] / "02_4_discussion.md",
             skip_validation=ctx.skip_validation,
             verbose=ctx.verbose,
@@ -565,7 +565,7 @@ Main findings:
 2. Include at least 1 summary table (if relevant)
 3. **Table constraints**: Maximum 300 chars per cell, maximum 5 columns
 4. Put table details in prose paragraphs AFTER tables, not inside cells
-5. **Citations:** ONLY use citations from the CITATION DATABASE above with {{cite_XXX}} format{ctx.language_instruction}""",
+5. **Citations:** ONLY use citations from the CITATION DATABASE above with {{cite_XXX}} format{ctx.language_instruction}{ctx.user_material}""",
             save_to=ctx.folders['drafts'] / "03_conclusion.md",
             skip_validation=ctx.skip_validation,
             verbose=ctx.verbose,
@@ -643,7 +643,7 @@ Supplementary references, tools, and resources for further reading.
 2. Use markdown tables where appropriate
 3. **Table constraints**: Maximum 300 chars per cell, maximum 5 columns
 4. Put table details in prose paragraphs AFTER tables, not inside cells
-5. Each appendix should be standalone and informative{ctx.language_instruction}""",
+5. Each appendix should be standalone and informative{ctx.language_instruction}{ctx.user_material}""",
                 save_to=ctx.folders['drafts'] / "04_appendices.md",
                 skip_validation=ctx.skip_validation,
                 verbose=ctx.verbose,

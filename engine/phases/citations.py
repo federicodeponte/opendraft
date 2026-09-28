@@ -94,6 +94,15 @@ def run_citation_management(ctx: DraftContext) -> None:
     # metadata scraping so abstracts are populated for the judge to read.
     _run_claim_verification(ctx, citation_db_path)
 
+    # User supplied records are retained as explicitly unverified material.
+    from utils.citation_database import save_citation_database
+    known = {c.title.casefold() for c in ctx.citation_database.citations}
+    for citation in scout_citations:
+        if citation.api_source == "User supplied" and citation.title.casefold() not in known:
+            ctx.citation_database.citations.append(citation)
+            known.add(citation.title.casefold())
+    save_citation_database(ctx.citation_database, citation_db_path)
+
     if ctx.verbose:
         print(f"\u2705 Citations: {len(ctx.citation_database.citations)} unique")
 
@@ -274,6 +283,8 @@ def _build_citation_summary(citation_database) -> str:
         citation_summary += f"{i}. **[{citation.id}]** {authors_str} ({citation.year})\n"
         citation_summary += f"   Title: {citation.title}\n"
 
+        if citation.api_source == "User supplied":
+            citation_summary += "   User supplied; metadata not independently verified\n"
         if citation.doi:
             citation_summary += f"   DOI: {citation.doi}\n"
         if citation.journal:
