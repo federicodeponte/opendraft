@@ -76,3 +76,21 @@ def test_custom_models_allowed(monkeypatch):
     monkeypatch.setenv("AI_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_MODEL", "custom-openai")
     assert ModelConfig().model_name == "custom-openai"
+
+
+def test_engine_namespace_import_works_in_fresh_process(tmp_path):
+    """Provider adapters must resolve when engine.utils is the import path."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    env.update(AI_PROVIDER="claude", ANTHROPIC_API_KEY="test-key")
+    result = subprocess.run(
+        [sys.executable, "-c", "from engine.utils.agent_runner import setup_model; print(type(setup_model()).__name__)"],
+        cwd=repo, env=env, text=True, capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "ClaudeModelWrapper"
