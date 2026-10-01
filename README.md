@@ -1,6 +1,14 @@
 # OpenDraft: open-source AI research paper drafts with checked citations
 
-OpenDraft helps researchers create literature reviews, research papers, and thesis drafts with a Python engine that checks cited DOIs against scholarly databases. [Use the hosted OpenPaper app](https://openpaper.dev/) or [install OpenDraft locally](#quick-start) with `git clone https://github.com/federicodeponte/opendraft.git` and `pip install -r requirements.txt`.
+Give your agent one topic line and get back a drafted research paper, literature review or thesis chapter, with every printed DOI checked.
+
+```bash
+npx skills add federicodeponte/opendraft --skill autonomous-research
+```
+
+Or get it on Edge: **[getedge.cc/skills/autonomous-research](https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft)**. Then ask your agent: `Write a paper on <topic>`.
+
+Prefer a hosted app? [Use OpenPaper](https://openpaper.dev/). Want the Python engine? [Run the engine yourself](#run-the-engine-yourself).
 
 <p align="center">
   <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/hero.png" width="100%" alt="OpenDraft: 459 GitHub stars, #1 on Google for open source research paper generator, 22k+ downloads"></a>
@@ -71,7 +79,7 @@ Replace [YOUR TOPIC], then paste into your agent.
 - [Citation verification](#citation-verification)
 - [Features](#features)
 - [Use it as a Claude Skill](#use-it-as-a-claude-skill)
-- [Quick Start](#quick-start)
+- [Run the engine yourself](#run-the-engine-yourself)
 - [Which AI Model Should I Use?](#which-ai-model-should-i-use)
 - [Example Output](#example-output)
 - [FAQ](#faq)
@@ -470,6 +478,13 @@ Output: `paper_digest.mp3` - a professional narration summarizing the key points
 ## Use it as a Claude Skill
 
 This engine also exists as a Skill, for agents that read Skills. Claude Code is one.
+The bundle lives in this repo at [`skills/autonomous-research/`](skills/autonomous-research/),
+kept identical to [getedgehq/skills](https://github.com/getedgehq/skills/tree/main/autonomous-research)
+by `scripts/sync_skill.sh` and a CI check.
+
+```bash
+npx skills add federicodeponte/opendraft --skill autonomous-research
+```
 
 **Get it on Edge: [getedge.cc/skills/autonomous-research](https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft)**
 
@@ -506,7 +521,7 @@ its origin here.
 
 ---
 
-## Quick Start
+## Run the engine yourself
 
 ### Prerequisites
 - Python 3.10+
