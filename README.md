@@ -1,3 +1,7 @@
+# OpenDraft: open-source AI research paper drafts with checked citations
+
+OpenDraft helps researchers create literature reviews, research papers, and thesis drafts with a Python engine that checks cited DOIs against scholarly databases. [Use the hosted OpenPaper app](https://openpaper.dev/) or [install OpenDraft locally](#quick-start) with `git clone https://github.com/federicodeponte/opendraft.git` and `pip install -r requirements.txt`.
+
 <p align="center">
   <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/hero.png" width="100%" alt="OpenDraft: 459 GitHub stars, #1 on Google for open source research paper generator, 22k+ downloads"></a>
 </p>
