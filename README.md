@@ -18,6 +18,7 @@ Prefer a hosted app? [Use OpenPaper](https://openpaper.dev/). Want the Python en
   <a href="https://github.com/federicodeponte/opendraft/stargazers"><img src="https://img.shields.io/github/stars/federicodeponte/opendraft?style=flat&color=5b9dff" alt="GitHub stars"></a>
   <a href="https://pypi.org/project/opendraft/"><img src="https://img.shields.io/pypi/v/opendraft?color=5b9dff" alt="PyPI version"></a>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
+  <a href="https://getedge.cc/?ref=opendraft-github"><img src="https://img.shields.io/badge/powered%20by-Edge-154cff" alt="Powered by Edge"></a>
 </p>
 
 <p align="center">
