@@ -75,3 +75,50 @@ class OpenAIModelWrapper:
         text = completion.choices[0].message.content or "" if completion.choices else ""
         usage = getattr(completion, "usage", None)
         return _response(text, getattr(usage, "prompt_tokens", 0), getattr(usage, "completion_tokens", 0))
+
+
+def _import_litellm():
+    try:
+        import litellm
+    except ImportError as error:
+        raise ImportError(
+            "The litellm provider needs the LiteLLM SDK: pip install 'opendraft[litellm]'"
+        ) from error
+    litellm.suppress_debug_info = True  # its help banners would print over OpenDraft's output
+    return litellm
+
+
+class LiteLLMModelWrapper:
+    """A model reached through the LiteLLM SDK, presented with the Gemini response shape.
+
+    ``model_name`` is a LiteLLM ``provider/model`` id (anthropic/claude-sonnet-4-6,
+    vertex_ai/gemini-2.5-flash, bedrock/..., azure/..., ...). Each provider's credentials
+    come from its own environment; ``api_key`` and ``api_base`` are passed only to override
+    them or to route through a gateway/proxy.
+    """
+
+    def __init__(self, model_name: str, temperature: float = 0.7, api_key: str = "", api_base: str = ""):
+        self.model_name = model_name
+        self.temperature = temperature
+        self.api_key = api_key or None
+        self.api_base = api_base or None
+
+    def generate_content(self, prompt, generation_config=None, safety_settings=None):
+        litellm = _import_litellm()
+        options = _generation_options(generation_config, self.temperature)
+        kwargs = {
+            "model": self.model_name,
+            "messages": [{"role": "user", "content": _prompt_text(prompt)}],
+            "temperature": options["temperature"],
+            "max_tokens": options["max_tokens"],
+            "drop_params": True,  # a provider that does not take a kwarg gets it dropped, not refused
+            "num_retries": 3,
+        }
+        if self.api_base:
+            kwargs["api_base"] = self.api_base
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
+        completion = litellm.completion(**kwargs)
+        text = completion.choices[0].message.content or "" if completion.choices else ""
+        usage = getattr(completion, "usage", None)
+        return _response(text, getattr(usage, "prompt_tokens", 0), getattr(usage, "completion_tokens", 0))
