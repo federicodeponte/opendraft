@@ -47,6 +47,7 @@ Changelog = "https://github.com/federicodeponte/opendraft/blob/master/CHANGELOG.
 
 [project.optional-dependencies]
 pdf = ["PyPDF2", "pdfplumber"]
+litellm = ["litellm>=1.97.0,<1.106.0"]
 dev = ["pytest", "black", "ruff"]
 
 [tool.setuptools.packages.find]
