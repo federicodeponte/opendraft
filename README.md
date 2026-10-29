@@ -11,7 +11,7 @@ Or get it on Edge: **[getedge.cc/skills/autonomous-research](https://getedge.cc/
 Prefer a hosted app? [Use OpenPaper](https://openpaper.dev/). Want the Python engine? [Run the engine yourself](#run-the-engine-yourself).
 
 <p align="center">
-  <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/hero.png" width="100%" alt="OpenDraft: 459 GitHub stars, #1 on Google for open source research paper generator, 22k+ downloads"></a>
+  <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/hero.png" width="100%" alt="OpenDraft, the open-source AI research paper generator: one research question in, a cited draft out. Pages from a 59-page example draft."></a>
 </p>
 
 <p align="center">
@@ -31,7 +31,8 @@ Prefer a hosted app? [Use OpenPaper](https://openpaper.dev/). Want the Python en
 </p>
 
 <p align="center">
-  <img src="assets/demo.webp" width="100%" alt="OpenDraft generating a source-grounded research paper from a single prompt, with DOI-checked citations and a typeset PDF">
+  <img src="assets/demo.webp" width="100%" alt="OpenDraft launch reel: npx opendraft takes one research question, finds sources, checks each citation DOI against scholarly databases and exports a cited PDF draft">
+  <br><sub>Launch reel (stylised). Real output: the <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf">59-page example draft</a> in <code>/examples</code>.</sub>
 </p>
 
 ---
@@ -69,9 +70,26 @@ Replace [YOUR TOPIC], then paste into your agent.
 
 ---
 
+## OpenDraft vs other AI research tools
+
+Looking for an open-source alternative to ChatGPT, Elicit, SciSpace or Jenni for research writing? Here is where OpenDraft fits.
+
+| | **OpenDraft** | ChatGPT | Elicit | SciSpace | Jenni AI |
+|:---|:---|:---|:---|:---|:---|
+| **Built for** | A full cited draft (5–80+ pages, PDF/Word/LaTeX) from one question | General chat and writing | Finding and summarising papers | Reading and reviewing papers | Writing alongside you |
+| **Open source** | Yes (MIT) | No | No | No | No |
+| **Self-hosted, your own model key** | Yes | No | No | No | No |
+| **Citation rule in public code** | Yes: a DOI must be held by 2 of CrossRef, OpenAlex, Semantic Scholar | Closed source | Closed source | Closed source | Closed source |
+| **Price** | Free; ~$0.35–$3 model cost per draft | Freemium | Freemium | Freemium | Freemium |
+
+OpenDraft is a drafting engine, not a replacement for reading the sources. Use the tools above to explore literature; use OpenDraft when you need a structured first draft with checked citations.
+
+---
+
 ## Table of Contents
 
 - [At a Glance](#at-a-glance)
+- [OpenDraft vs other AI research tools](#opendraft-vs-other-ai-research-tools)
 - [What is OpenDraft?](#what-is-opendraft)
 - [Why OpenDraft Exists](#why-opendraft-exists)
 - [OpenDraft for Open Source Maintainers](#opendraft-for-open-source-maintainers)
@@ -308,171 +326,8 @@ English, Spanish, German, French, Chinese, Japanese, Korean, Arabic, Portuguese,
 ### 100% Free and Open Source
 MIT license. Self-host with your own API keys.
 
-### TL;DR and Digest Tools
-OpenDraft includes two standalone tools for quickly understanding any research paper:
-
-#### TL;DR: 5-Bullet Summary
-
-Generate a concise 5-bullet summary of any paper in seconds:
-
-```bash
-# As a subcommand
-opendraft tldr paper.pdf
-
-# Or standalone
-opendraft-tldr paper.pdf
-
-# Output to file
-opendraft tldr paper.pdf -o summary.md
-```
-
-Each bullet follows academic structure: thesis, key finding, method, implication, limitation.
-
-#### Digest: 60-Second Audio Briefing
-
-Generate a podcast-style audio summary you can listen to:
-
-```bash
-# Generate script + audio
-opendraft digest paper.pdf
-
-# Choose a different voice (rachel, adam, josh, elli, bella)
-opendraft digest paper.pdf --voice adam
-
-# Script only (no audio)
-opendraft digest paper.pdf --no-audio
-
-# Specify output directory
-opendraft digest paper.pdf -o output/
-```
-
-**Requirements:**
-- Digest audio requires an [ElevenLabs API key](https://elevenlabs.io/) set as `ELEVENLABS_API_KEY`
-- PDF reading requires the optional `pdf` extra: `pip install opendraft[pdf]`
-
-Both tools work with any academic paper (PDF, Markdown, or plain text), not just OpenDraft-generated documents.
-
----
-
-## Data Fetching
-
-Fetch research data from major statistical APIs directly into your workflow:
-
-```bash
-# Search for indicators
-opendraft data search GDP
-
-# Fetch World Bank data
-opendraft data worldbank NY.GDP.MKTP.CD --countries USA;DEU --start 2020 --end 2023
-
-# Fetch EU statistics (Eurostat)
-opendraft data eurostat nama_10_gdp
-
-# Fetch Our World in Data datasets
-opendraft data owid covid-19
-```
-
-**Supported providers:**
-- **World Bank** - Development indicators (GDP, population, education, health)
-- **Eurostat** - European Union statistics
-- **Our World in Data** - Open research datasets
-
-Data is saved as CSV files for use in your research.
-
----
-
-## Draft Revision
-
-Revise existing drafts with AI assistance:
-
-```bash
-# Revise a draft with natural language instructions
-opendraft revise ./output "Make the introduction longer and add more context"
-
-# The revised draft is saved as draft_v2.md (with PDF/DOCX exports)
-```
-
-Features:
-- Auto-detects draft files in output folders
-- Preserves all citations during revision
-- Automatic versioning (v2, v3, v4...)
-- Quality scoring before/after
-- PDF and DOCX export of revised version
-
----
-
-## Research Expose Mode
-
-Generate a quick research overview instead of a full draft:
-
-```bash
-opendraft "Neural Networks in Healthcare" --expose
-```
-
-This produces a research expose with:
-- **Research Sources Overview** - Number of sources, publication years, key journals
-- **Key Research Teams** - Major authors and research groups in the field
-- **Structured Outline** - Chapter/section structure for a full paper
-- **Complete Bibliography** - All sources with DOIs and journal info
-- **Next Steps** - Guidance for developing into a full draft
-
-Use expose mode when you want to:
-- Quickly scope a research topic
-- Validate there's enough literature
-- Get a structured starting point
-- Review sources before committing to a full draft
-
-Expose mode is ~3x faster than full draft generation.
-
----
-
-## TL;DR Mode
-
-Generate a 5-bullet summary of any academic paper in seconds:
-
-```bash
-# Summarize a PDF
-opendraft tldr paper.pdf
-
-# Summarize a markdown file
-opendraft tldr draft.md
-
-# Save to file
-opendraft tldr paper.pdf --output summary.md
-```
-
-Output:
-```
-📄 TL;DR: paper.pdf
-
-• Main finding: Neural networks improve diagnostic accuracy by 23%
-• Method: Retrospective analysis of 50,000 patient records
-• Key limitation: Single-center study, needs external validation
-• Implication: AI-assisted diagnosis could reduce misdiagnosis rates
-• Future work: Multi-center trials planned for 2025
-```
-
-Works with any PDF, Markdown, or text file.
-
----
-
-## Audio Digest
-
-Generate a 60-second audio summary using ElevenLabs TTS:
-
-```bash
-# Generate audio digest (requires ElevenLabs API key)
-opendraft digest paper.pdf
-
-# Choose a voice
-opendraft digest paper.pdf --voice adam
-
-# Available voices: rachel (default), adam, josh, elli, bella
-```
-
-Output: `paper_digest.mp3` - a professional narration summarizing the key points.
-
-**Setup:** Set `ELEVENLABS_API_KEY` in your environment or `.env` file.
+### More tools in the CLI
+Summaries (`opendraft tldr`), 60-second audio digests (`opendraft digest`), data fetching from World Bank, Eurostat and Our World in Data (`opendraft data`), draft revision (`opendraft revise`) and a fast research-scoping mode (`--expose`). See [docs/TOOLS.md](docs/TOOLS.md).
 
 ---
 
@@ -605,55 +460,38 @@ opendraft/
 
 ---
 
-## Common Questions
+## FAQ
+
+### What is the best open-source AI research paper generator?
+**OpenDraft** is a free, MIT-licensed engine that turns one research question into a full cited draft (5–80+ pages) using 19 specialised agents, with exports to PDF, Word and LaTeX. You run it yourself with your own Gemini, OpenAI or Claude key.
+
+### Is there an AI that writes research papers without fake citations?
+**OpenDraft does not invent citations.** By default a citation is kept only when its DOI is held by at least two of CrossRef, OpenAlex and Semantic Scholar; single-source results are dropped. One of the two may be the database that returned the candidate, which is taken at its word rather than re-queried; `verification_independent_sources` records the ones actually re-queried. The LLM-asserted fallback is off by default and, if switched on, everything it produces is tagged `llm_unverified`. This proves the cited work is registered and indexed, not that it supports the sentence it is attached to; a separate claim-level check covers that, and its verdicts are LLM judgements for a human reviewer. See [Citation verification](#citation-verification).
 
 ### Is OpenDraft free?
-**Yes.** OpenDraft is 100% free and open source under the MIT license. You self-host it with your own model API keys (a typical draft costs ~$0.35–$3 in API fees).
+**Yes.** OpenDraft is 100% free and open source under the MIT license. You self-host it with your own model API keys; a typical draft costs ~$0.35–$3 in API fees.
 
-### How does OpenDraft handle citations?
-OpenDraft confirms each citation's DOI against at least two of CrossRef, OpenAlex and Semantic Scholar and drops the ones it cannot confirm. See [Citation verification](#citation-verification) for exactly what that establishes.
+### Can OpenDraft write a literature review or a thesis?
+**Yes, as a first draft.** It drafts literature reviews, research papers and thesis chapters, and can produce a complete first draft of a PhD dissertation (100+ pages). It is a drafting assistant, not an autonomous author: verify the sources, add your own analysis, and check your institution's AI policy before submitting.
 
-### Can OpenDraft write a full PhD dissertation?
-**OpenDraft can generate a complete first draft** of a PhD dissertation (100+ pages) in 10–20 minutes. However, it is a drafting assistant, not an autonomous author. You must review, edit, and add your own analysis before submission.
-
-### Does OpenDraft make up citations?
-**Citations are not invented, and the engine records exactly how each one was established.** By default a citation must have its DOI held by at least two of CrossRef, OpenAlex and Semantic Scholar; single-source results are dropped. One of the two may be the database that returned the candidate, which is taken at its word rather than re-queried; `verification_independent_sources` records the ones actually re-queried. The LLM-asserted fallback is off by default and, if you switch it on, everything it produces is permanently tagged `llm_unverified`. Note what this proves: that the cited work is registered and indexed, not that it supports the sentence it is attached to. A separate claim-level check covers that, and its verdicts are LLM judgements for a human reviewer. See [Citation verification](#citation-verification).
-
-### How long does it take to generate a thesis with OpenDraft?
+### How long does it take to generate a paper with OpenDraft?
 **10–20 minutes** for a full master's thesis (50–80 pages). A shorter research paper takes 5–10 minutes.
 
 ### What file formats does OpenDraft export to?
 **PDF, Microsoft Word (.docx), and LaTeX source.**
 
-### Can I use OpenDraft for commercial purposes?
-**Yes.** The MIT license permits commercial use, modification, and distribution without restriction.
+### Can I use OpenDraft commercially?
+**Yes.** The MIT license permits commercial use, modification and distribution.
+
+### Why a multi-agent architecture?
+OpenDraft uses **19 specialised agents** (research, citations, structure, writing, polish, export) instead of one general-purpose prompt, so each stage can be checked and improved on its own.
 
 ---
 
-## FAQ
+## Mentioned in
 
-### Is this really free?
-
-**Yes.** OpenDraft is 100% open source under the MIT license. Self-host with your own API keys. A typical research draft costs ~$0.35-$3 depending on the model.
-
-### How are citations verified?
-
-OpenDraft confirms each citation's DOI in at least two of CrossRef, OpenAlex and Semantic Scholar before keeping it, and drops single-source or unconfirmed results.
-
-### Can I use this for my university thesis?
-
-OpenDraft generates **research drafts**—starting points you should review, edit, and build upon. Always:
-- Verify all sources yourself
-- Add your own analysis and insights
-- Check your institution's AI policy
-
-### Why a multi-agent architecture?
-
-OpenDraft uses **19 specialized agents**—one for research, one for citations, one for structure, one for export, etc.—instead of a single general-purpose prompt.
-
-### Can I use this commercially?
-
-**Yes.** MIT license allows commercial use. Build products, offer services, modify the code—no restrictions.
+- *AI for Auto-Research: Roadmap & User Guide* (Kong, Sun, Chow et al., 2026), [arXiv:2605.18661](https://arxiv.org/abs/2605.18661): listed as the full-draft generation system in the paper-writing table.
+- Daniel Kornaś, [LinkedIn post, Oct 2026](https://www.linkedin.com/posts/daniel-kornas_research-drafts-need-sources-you-can-trace-activity-7511300253900480512-YVVp).
 
 ---
 
