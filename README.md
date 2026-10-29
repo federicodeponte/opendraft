@@ -31,7 +31,7 @@ Prefer a hosted app? [Use OpenPaper](https://openpaper.dev/). Want the Python en
 </p>
 
 <p align="center">
-  <img src="assets/demo.gif" width="900" alt="OpenDraft generating a source-grounded research paper from a single prompt, with DOI-checked citations and a typeset PDF">
+  <img src="assets/demo.webp" width="100%" alt="OpenDraft generating a source-grounded research paper from a single prompt, with DOI-checked citations and a typeset PDF">
 </p>
 
 ---
