@@ -2,7 +2,7 @@
 
 **OpenDraft is an open-source agent system that researches and writes papers with [verified citations](#citation-verification).**
 
-Cited in a peer-reviewed NIH paper that selects it as one of four representative open-source writing systems, alongside Stanford's STORM / Co-STORM ([Talukder et al., *Frontiers in Artificial Intelligence*, 2026](https://doi.org/10.3389/frai.2026.1945655)), and in the NUS survey [*AI for Auto-Research: Roadmap & User Guide*](https://arxiv.org/abs/2605.18661) (Kong et al., 2026). 24k+ downloads ([PyPI 20,285](https://pepy.tech/projects/opendraft) + [npm 4,196](https://www.npmjs.com/package/opendraft), checked 2026-11-02) and 524 [GitHub stars](https://github.com/federicodeponte/opendraft/stargazers).
+Cited in a peer-reviewed NIH paper that selects it as one of four representative open-source writing systems, alongside Stanford's STORM / Co-STORM ([Talukder et al., *Frontiers in Artificial Intelligence*, 2026](https://doi.org/10.3389/frai.2026.1945655); see [OpenDraft vs STORM / Co-STORM](docs/opendraft-vs-storm.md)), and in the NUS survey [*AI for Auto-Research: Roadmap & User Guide*](https://arxiv.org/abs/2605.18661) (Kong et al., 2026). 24k+ downloads ([PyPI 20,285](https://pepy.tech/projects/opendraft) + [npm 4,196](https://www.npmjs.com/package/opendraft), checked 2026-11-02) and 524 [GitHub stars](https://github.com/federicodeponte/opendraft/stargazers).
 
 Give your agent one topic line and get back a drafted research paper, literature review or thesis chapter, with every printed DOI checked.
 
@@ -692,6 +692,7 @@ Maintainer workflow docs:
 - 💬 **Discussions:** [GitHub Discussions](https://github.com/federicodeponte/opendraft/discussions)
 - 🐛 **Issues:** [Report Bug](https://github.com/federicodeponte/opendraft/issues)
 - 🗒️ **Changelog:** [CHANGELOG.md](CHANGELOG.md)
+- ⚖️ **Comparison:** [OpenDraft vs STORM / Co-STORM](docs/opendraft-vs-storm.md)
 - 📜 **License:** [MIT](LICENSE)
 
 ---
