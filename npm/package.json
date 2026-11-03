@@ -1,7 +1,7 @@
 {
   "name": "opendraft",
   "version": "1.7.2",
-  "description": "AI-powered research paper generator with verified citations",
+  "description": "Open-source agent system that researches and writes papers with verified citations",
   "bin": {
     "opendraft": "bin/opendraft.js"
   },
