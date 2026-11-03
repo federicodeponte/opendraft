@@ -1,4 +1,4 @@
-# OpenDraft: open-source AI research paper drafts with checked citations
+# OpenDraft: open-source agent system that researches and writes papers with verified citations
 
 **OpenDraft is an open-source agent system that researches and writes papers with [verified citations](#citation-verification).**
 
@@ -12,7 +12,7 @@ npx skills add federicodeponte/opendraft --skill autonomous-research
 
 Or get it on Edge: **[getedge.cc/skills/autonomous-research](https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft)**. Then ask your agent: `Write a paper on <topic>`.
 
-Prefer a hosted app? [Use OpenPaper](https://openpaper.dev/). Want the Python engine? [Run the engine yourself](#run-the-engine-yourself).
+Project home, docs and examples: **[opendraft.xyz](https://opendraft.xyz)**. Prefer a hosted app? [Use OpenPaper](https://openpaper.dev/). Want the Python engine? [Run the engine yourself](#run-the-engine-yourself).
 
 <p align="center">
   <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/hero.png" width="100%" alt="OpenDraft: 459 GitHub stars, #1 on Google for open source research paper generator, 22k+ downloads"></a>
@@ -688,6 +688,7 @@ Maintainer workflow docs:
 
 ## Links
 
+- 🏠 **Project home, docs and examples:** [opendraft.xyz](https://opendraft.xyz)
 - 🌐 **Hosted version:** [openpaper.dev](https://openpaper.dev)
 - 💬 **Discussions:** [GitHub Discussions](https://github.com/federicodeponte/opendraft/discussions)
 - 🐛 **Issues:** [Report Bug](https://github.com/federicodeponte/opendraft/issues)

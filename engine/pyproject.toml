@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opendraft"
 version = "1.8.1"
-description = "Generate master-level research papers with real citations in minutes"
+description = "Open-source agent system that researches and writes papers with verified citations"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
@@ -82,9 +82,9 @@ all = [
 
 [project.urls]
 Homepage = "https://opendraft.xyz"
-Documentation = "https://github.com/federicodeponte/opendraft/tree/main/docs"
+Documentation = "https://opendraft.xyz/docs"
 Repository = "https://github.com/federicodeponte/opendraft"
-Changelog = "https://github.com/federicodeponte/opendraft/blob/main/CHANGELOG.md"
+Changelog = "https://github.com/federicodeponte/opendraft/blob/master/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/federicodeponte/opendraft/issues"
 
 [project.scripts]
