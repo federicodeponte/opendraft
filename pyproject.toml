@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opendraft"
 version = "1.8.1"
-description = "Open-source AI research draft generator with 19 specialized agents and verified citations"
+description = "Open-source agent system that researches and writes papers with verified citations"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
