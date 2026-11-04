@@ -15,14 +15,17 @@ maintainers = [
     {name = "Federico De Ponte"}
 ]
 keywords = [
-    "academic-writing",
-    "draft",
-    "ai",
-    "research",
-    "citation-management",
-    "llm",
-    "pdf-generation",
-    "scholarly"
+    "research paper generator",
+    "thesis writer",
+    "literature review",
+    "academic writing",
+    "citation verification",
+    "verified citations",
+    "crossref",
+    "openalex",
+    "semantic scholar",
+    "agents",
+    "open source"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

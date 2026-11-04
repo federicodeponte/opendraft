@@ -2,22 +2,23 @@ cff-version: 1.2.0
 message: "If you use OpenDraft in your research, please cite it as below."
 type: software
 title: "OpenDraft"
-abstract: "Open-source AI research draft generator with 19 specialized agents, verified citations from 500M+ academic papers, and export to PDF, Word, and LaTeX."
+abstract: "The open-source agent system that writes research papers with verified citations. Every citation is checked against Crossref, OpenAlex and Semantic Scholar."
 authors:
   - family-names: "De Ponte"
     given-names: "Federico"
 repository-code: "https://github.com/federicodeponte/opendraft"
-url: "https://openpaper.dev"
+url: "https://opendraft.xyz"
 license: MIT
 keywords:
-  - academic writing
-  - AI research assistant
-  - thesis generator
-  - citation verification
-  - multi-agent AI
+  - research paper generator
+  - thesis writer
   - literature review
-  - research paper
+  - academic writing
+  - citation verification
+  - Crossref
+  - OpenAlex
+  - Semantic Scholar
+  - multi-agent system
   - open source
-  - Python
-version: 2.1.0
-date-released: 2025-10-30
+version: 1.8.1
+date-released: 2026-09-29

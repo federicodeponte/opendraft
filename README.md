@@ -1,710 +1,104 @@
-# OpenDraft: open-source agent system that researches and writes papers with verified citations
+# OpenDraft: open-source research paper and thesis writer with verified citations
 
-**OpenDraft is an open-source agent system that researches and writes papers with [verified citations](#citation-verification).**
+**The open-source agent system that writes research papers with verified citations.**
 
-Cited in a peer-reviewed NIH paper that selects it as one of four representative open-source writing systems, alongside Stanford's STORM / Co-STORM ([Talukder et al., *Frontiers in Artificial Intelligence*, 2026](https://doi.org/10.3389/frai.2026.1945655); see [OpenDraft vs STORM / Co-STORM](docs/opendraft-vs-storm.md)), and in the NUS survey [*AI for Auto-Research: Roadmap & User Guide*](https://arxiv.org/abs/2605.18661) (Kong et al., 2026). 24k+ downloads ([PyPI 20,285](https://pepy.tech/projects/opendraft) + [npm 4,196](https://www.npmjs.com/package/opendraft), checked 2026-11-02) and 524 [GitHub stars](https://github.com/federicodeponte/opendraft/stargazers).
+OpenDraft drafts research papers, literature reviews and thesis chapters from one topic, and keeps a citation only if at least two of Crossref, OpenAlex and Semantic Scholar hold its DOI. An open-source alternative to Jenni and ThesisAI: MIT licensed, runs on your own model key.
 
-Give your agent one topic line and get back a drafted research paper, literature review or thesis chapter, with every printed DOI checked.
+**Website: [opendraft.xyz](https://opendraft.xyz)** · [Docs](https://opendraft.xyz/docs) · [Sample PDF](examples/Why_Academic_Thesis_AI_Saves_The_World.pdf) · [Hosted version (OpenPaper)](https://openpaper.dev/)
+
+[![PyPI](https://img.shields.io/pypi/v/opendraft?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/opendraft/)
+[![PyPI downloads](https://img.shields.io/pepy/dt/opendraft?style=for-the-badge&label=PyPI%20downloads)](https://pepy.tech/projects/opendraft)
+[![GitHub stars](https://img.shields.io/github/stars/federicodeponte/opendraft?style=for-the-badge&logo=github)](https://github.com/federicodeponte/opendraft)
+[![License: MIT](https://img.shields.io/badge/License-MIT-555?style=for-the-badge)](LICENSE)
+
+**Use OpenDraft as a skill in your own agent (Claude, ChatGPT), free → [getedge.cc/skills/autonomous-research](https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft)**
+
+<p align="center">
+  <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/sample-draft.gif" width="900" alt="Pages from a real OpenDraft sample draft: title page, table of contents, introduction, results and a DOI-linked reference list"></a>
+  <br><sub>Real output: pages from the <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf">sample draft</a> (60 pages, 40+ citations).</sub>
+</p>
+
+## Cited in research
+
+- **Talukder et al. (2026)**, [*Discourse2Draft: an AI-powered structured document writing tool*](https://doi.org/10.3389/frai.2026.1945655), *Frontiers in Artificial Intelligence*. Peer-reviewed NIH paper, next to Stanford's STORM ([comparison](docs/opendraft-vs-storm.md)).
+- **Kong et al. (2026)**, [*AI for Auto-Research: Roadmap & User Guide*](https://arxiv.org/abs/2605.18661), arXiv:2605.18661. NUS survey of research agents.
+
+**24k+ downloads:** [20,289 on PyPI](https://pepy.tech/projects/opendraft) (pepy.tech) and [4,200 on npm](https://www.npmjs.com/package/opendraft), as of November 2026.
+
+## Quickstart
+
+Requires Python 3.10+ and a Gemini API key (Claude and OpenAI also work).
+
+```bash
+pip install opendraft
+opendraft setup                      # enter your Gemini API key
+opendraft "Remote work and team productivity"
+```
+
+| Command | What it does |
+|:---|:---|
+| `opendraft` | Interactive mode |
+| `opendraft "Topic" --level phd --lang de` | Draft at a level (`research_paper`, `bachelor`, `master`, `phd`) and language |
+| `opendraft "Topic" --expose` | Outline and sources only, faster |
+| `opendraft revise ./output "make the intro longer"` | Revise a draft |
+| `opendraft tldr paper.pdf` | 5-bullet summary of any paper |
+
+## Use it as a skill
+
+In Claude Code, Codex or any agent that reads skills:
 
 ```bash
 npx skills add federicodeponte/opendraft --skill autonomous-research
 ```
 
-Or get it on Edge: **[getedge.cc/skills/autonomous-research](https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft)**. Then ask your agent: `Write a paper on <topic>`.
-
-Project home, docs and examples: **[opendraft.xyz](https://opendraft.xyz)**. Prefer a hosted app? [Use OpenPaper](https://openpaper.dev/). Want the Python engine? [Run the engine yourself](#run-the-engine-yourself).
-
-<p align="center">
-  <a href="examples/Why_Academic_Thesis_AI_Saves_The_World.pdf"><img src="assets/readme/hero.png" width="100%" alt="OpenDraft: 459 GitHub stars, #1 on Google for open source research paper generator, 22k+ downloads"></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/federicodeponte/opendraft/stargazers"><img src="https://img.shields.io/github/stars/federicodeponte/opendraft?style=flat&color=5b9dff" alt="GitHub stars"></a>
-  <a href="https://pypi.org/project/opendraft/"><img src="https://img.shields.io/pypi/v/opendraft?color=5b9dff" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
-  <a href="https://getedge.cc/?ref=opendraft-github"><img src="https://img.shields.io/badge/powered%20by-Edge-154cff" alt="Powered by Edge"></a>
-</p>
-
-<p align="center">
-  Ask a research question. OpenDraft searches CrossRef, OpenAlex and Semantic Scholar, writes the draft,<br>
-  and keeps only sources whose DOI appears in at least two of those databases. Export to PDF, Word or LaTeX.
-</p>
-
-<p align="center">
-  <b>Use the OpenDraft research skill in your own AI agent, free → <a href="https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft">getedge.cc/skills/autonomous-research</a></b>
-</p>
-
-<p align="center">
-  <img src="assets/demo.gif" width="900" alt="OpenDraft generating a source-grounded research paper from a single prompt, with DOI-checked citations and a typeset PDF">
-</p>
-
----
-
-## Use OpenDraft in Claude Code or Codex
-
-Connect Edge, then ask your agent to research a topic and draft a paper with citations.
-
-```text
-Read https://getedge.cc/SKILL.md?ref=opendraft-github and help me connect Edge if needed.
-
-Once Edge is available, find and load the OpenPaper x OpenDraft skill and write a cited research draft on [YOUR TOPIC].
-
-If a restart is required, give me the exact prompt to resume.
-```
-
-Replace [YOUR TOPIC], then paste into your agent.
-
----
-
-## At a Glance
-
-| | |
-|:---|:---|
-| **What it is** | Open-source Python engine for AI-generated research drafts with citations checked against CrossRef, OpenAlex and Semantic Scholar |
-| **Best for** | Literature reviews, research papers, thesis drafts, reproducible research workflows |
-| **Agents** | 19 specialized AI agents (research, structure, writing, citation, polish, export) |
-| **Sources** | CrossRef, OpenAlex, Semantic Scholar (200M+) |
-| **Languages** | 57+ languages including English, Spanish, German, French, Chinese, Japanese |
-| **Export** | PDF, Microsoft Word (.docx), LaTeX |
-| **Cost** | Free and open source (MIT license); you bring your own model API keys. |
-| **Typical output** | 5–80+ pages, 10k–20k+ words, 30–50+ citations ([measured before multi-source confirmation was made the default](#citation-verification)) |
-| **Time to draft** | 10–20 minutes |
-| **API cost per draft** | ~$0.35 (Gemini Flash) to ~$3.00 (Claude Opus) |
-
----
-
-## Table of Contents
-
-- [At a Glance](#at-a-glance)
-- [What is OpenDraft?](#what-is-opendraft)
-- [Why OpenDraft Exists](#why-opendraft-exists)
-- [OpenDraft for Open Source Maintainers](#opendraft-for-open-source-maintainers)
-- [What OpenDraft is NOT](#what-opendraft-is-not)
-- [How It Works](#how-it-works)
-- [Citation verification](#citation-verification)
-- [Features](#features)
-- [Use it as a Claude Skill](#use-it-as-a-claude-skill)
-- [Run the engine yourself](#run-the-engine-yourself)
-- [Which AI Model Should I Use?](#which-ai-model-should-i-use)
-- [Example Output](#example-output)
-- [FAQ](#faq)
-- [Tech Stack](#tech-stack)
-- [Contributing](#contributing)
-- [Links](#links)
-
----
-
-## What is OpenDraft?
-
-**OpenDraft is an open-source Python engine that generates source-grounded research drafts using 19 specialized AI agents.** It is designed for academic researchers who need long-form documents (10,000–20,000+ words) built from citations whose DOIs are checked against public scholarly databases.
-
-OpenDraft does not invent its citations. By default a source is only included once its DOI is held by at least **two** of CrossRef, OpenAlex and Semantic Scholar, and every citation records which databases confirmed it and which ones this engine re-queried itself. See [Citation verification](#citation-verification) for exactly what that does and does not establish.
-
-- **OpenDraft is** a command-line tool and Python library for drafting academic papers.
-- **Best for:** Researchers drafting literature reviews, journal submissions, structured research papers, and thesis first drafts.
-- **License:** 100% free and open source (MIT).
-- **Setup time:** ~10 minutes for local installation.
-
----
-
-## OpenDraft for Open Source Maintainers
-
-OpenDraft is not just a drafting tool — it is a **reproducible research-agent pipeline** that open-source maintainers can extend, audit, and improve.
-
-We use Codex and OpenAI models to maintain OpenDraft itself:
-
-- **Automated PR review** — Codex reviews contributor changes for agent logic, prompt quality, and citation handling
-- **Regression test generation** — AI-assisted tests for citation accuracy, source coverage, and draft coherence
-- **Issue triage** — Codex suggests labels, duplicates, and fixes for bug reports
-- **Release workflow automation** — Automated changelogs, version bumps, and eval runs before each release
-- **Contributor templates** — Codex-assisted onboarding for adding new agents, validators, and export formats
-
-See [EVALUATION.md](EVALUATION.md) for the benchmark plan and [CONTRIBUTING.md](CONTRIBUTING.md) for maintainer guidelines.
-
----
-
-## Why OpenDraft Exists
-
-We built OpenDraft after repeatedly encountering AI writing tools that produced confident-sounding research drafts with hallucinated or unverifiable citations.
-
-Academic research requires trust, sources, and accountability.
-
-OpenDraft explores a different approach: instead of a single general-purpose model, it uses multiple specialized agents, each responsible for a specific step in the research drafting process, grounded in real academic literature.
-
-We open-sourced OpenDraft so researchers can inspect, critique, and improve how these systems actually work.
-
-### What Problem Does OpenDraft Solve?
-
-1. **Citation confidence** — OpenDraft confirms each source's DOI against multiple scholarly databases and drops the ones it cannot confirm, rather than accepting model-asserted references.
-2. **Long-form output** — OpenDraft generates 20,000+ word research drafts.
-3. **Academic structure** — OpenDraft builds structured research outlines with proper chapter/section hierarchy.
-4. **Export formats** — OpenDraft exports to PDF, DOCX, and LaTeX with academic formatting.
-5. **Open source** — OpenDraft is fully open source under the MIT license and can be inspected and extended.
-
-### Who Is OpenDraft For?
-
-- **Researchers** preparing literature reviews, journal submissions, or structured first drafts.
-- **Open-source maintainers** building tools on top of a reproducible research-drafting pipeline.
-- **Graduate students** working on a master's thesis or PhD dissertation.
-- **Academics** who want every citation's DOI checked against a public registry before it lands in a draft.
-- **Developers** extending the agent pipeline for custom research workflows, citation validators, and export formats.
-
----
-
-## What OpenDraft is NOT
-
-OpenDraft is intentionally **not** designed for:
-
-- One-click generation of final papers
-- Cheating on assignments
-- Inventing citations or bypassing peer review
-- Replacing human researchers
-
-It is a research assistance and drafting tool, not an autonomous author.
-
----
-
-## How It Works
-
-OpenDraft uses **19 specialized AI agents** that work like a research team:
-
-```
-📚 RESEARCH PHASE    → Finds candidate papers via CrossRef, OpenAlex, Semantic Scholar,
-                       web search, then confirms each DOI in 2+ of
-                       CrossRef/OpenAlex/Semantic Scholar and drops the rest
-🏗️ STRUCTURE PHASE   → Creates research outline with chapters
-✍️ WRITING PHASE     → Drafts each section with academic tone
-🔍 CITATION PHASE    → Dedupes, quality-filters, then checks each surviving
-                       source is actually on-topic for the paper
-✨ POLISH PHASE      → Refines language and formatting
-📄 EXPORT PHASE      → Generates PDF, Word, or LaTeX
-```
-
-**Result:** A complete research draft in 10-20 minutes.
-
----
-
-## Citation verification
-
-Citations are checked in two independent ways. They answer different questions
-and neither substitutes for the other.
-
-### 1. Does the work exist? (multi-source confirmation)
-
-Discovery may find a candidate through any source. Confirmation then looks the
-candidate's **DOI** up directly in each scholarly database and counts how many
-hold a record for it.
-
-**By default a citation is kept only if at least 2 of {CrossRef, OpenAlex,
-Semantic Scholar} hold its DOI.** A single-source result is dropped and the drop
-is logged. Accepting single-source results is an explicit opt-out
-(`require_multi_source=False`), not the default.
-
-To be exact about what "2 databases hold it" means: one of the two may be the
-database that returned the candidate in the first place, which is taken at its
-word rather than re-queried. The others are looked up directly by DOI. The
-engine tracks this distinction internally (`confirming_sources` versus
-`independently_confirmed_by`) and `verification_notes` on each citation spells
-out which database found it and which ones confirmed it.
-
-| Setting | Default | Effect |
-|:---|:---|:---|
-| `require_multi_source` | `True` | Drop citations fewer than `min_confirming_sources` databases hold |
-| `min_confirming_sources` | `2` | How many of the three must hold the DOI |
-| `allow_unconfirmed_web_sources` | `False` | Keep DOI-less web-search results (kept tagged if enabled) |
-| `enable_llm_fallback` | `False` | Let the LLM assert a citation when every lookup fails |
-
-Every citation in `bibliography.json` carries its provenance:
-
-| `verification_status` | Meaning |
-|:---|:---|
-| `multi_source_confirmed` | The DOI is held by `min_confirming_sources` or more databases, listed in `verification_sources` |
-| `single_source` | Exactly one database holds the DOI. Dropped under the default settings |
-| `unconfirmed` | The DOI carries no record in **any** scholarly database. Dropped under the default settings |
-| `web_search_unconfirmed` | No DOI, so no scholarly database could be queried. Zero databases confirmed it |
-| `llm_unverified` | Asserted by the LLM with no external lookup of any kind. Nothing checked that it exists |
-| `not_checked` | Confirmation was disabled for this run |
-
-`verification_sources` is written out even when it is empty, precisely so an
-unconfirmed citation can never serialize to look like a confirmed one.
-
-**What this establishes, and what it does not.** A confirmation means the DOI is
-registered and indexed in that many databases. It does not mean the work
-supports the sentence it is attached to, and it is not three separately sourced
-attestations of the same facts: OpenAlex and Semantic Scholar both ingest
-Crossref metadata, so the three are not fully independent of one another.
-
-arXiv is not queried as a citation database. `arxiv.org` can appear as a
-web-search result and Semantic Scholar exposes arXiv IDs, but there is no arXiv
-API client in this engine.
-
-### 2. Does the source support the claim? (claim-level verification)
-
-A real, correctly cited, multi-source-confirmed paper can still be attached to a
-claim it says nothing about. Existence checking cannot detect that, so
-`CitationClaimVerifier` judges each source against the claim it is cited for and
-returns `RELEVANT`, `IRRELEVANT` or `UNCERTAIN`.
-
-In the citation phase this runs against the **paper topic**, because that phase
-executes before any draft text exists and the topic is the only claim available
-at that point. Sentence-level checking needs a draft and is available through
-`run_citation_claim_verification()`.
-
-Reports are written to the research folder as
-`citation_claim_verification.md` and `.json`. A citation judged `IRRELEVANT` is
-removed only above a confidence floor (`CLAIM_VERIFICATION_MIN_CONFIDENCE`,
-default `0.7`), and the engine refuses to empty the bibliography outright.
-
-| Env var | Default | Effect |
-|:---|:---|:---|
-| `ENABLE_CLAIM_VERIFICATION` | `true` | Run claim-level verification at all |
-| `CLAIM_VERIFICATION_DROP_IRRELEVANT` | `true` | Remove irrelevant citations rather than only reporting them |
-| `CLAIM_VERIFICATION_MIN_CONFIDENCE` | `0.7` | Confidence needed before a removal happens |
-
-**These verdicts are language-model judgements, not proofs.** The judge reads a
-citation's title and abstract, not the paper's full text. `UNCERTAIN` means
-unchecked, not passing. Treat the output as evidence for a human reviewer.
-
-### Effect on how many citations you get
-
-Requiring two independent confirmations necessarily lets fewer candidates
-through than accepting the first responder did. That is the intended trade:
-fewer citations, each one confirmed by more than one database.
-
-**A run can now fail where it previously produced a weak draft.** Strict
-confirmation, the strict quality filter and claim-level removal all shrink the
-bibliography, and the pipeline raises `PipelineValidationError` if no citations
-survive the citation phase. If you hit that, widen the search or relax the
-settings deliberately rather than by accident.
-
-Citation counts quoted elsewhere in this README and in `EVALUATION.md` were
-measured before multi-source confirmation became the default and have **not**
-been re-measured since. Treat them as historical. If you need the old
-behaviour, set `require_multi_source=False` — and note that citations then
-carry `verification_status: not_checked` rather than being labelled confirmed.
-
-### Human review is still required
-
-Neither check removes the need to read the draft. See
-[What OpenDraft is NOT](#what-opendraft-is-not).
-
----
-
-## Features
-
-### Citations confirmed against real databases
-By default a citation is kept only if its DOI is held by at least two of CrossRef, OpenAlex and Semantic Scholar. A source only one database knows about is dropped, not quietly accepted. Every citation in `bibliography.json` carries the list of databases that confirmed it, so an unconfirmed source can never look like a confirmed one. See [Citation verification](#citation-verification).
-
-### Write Any Type of Academic Paper
-- Research papers (5-15 pages)
-- Literature reviews (20-40 pages)
-- Thesis drafts (30-80 pages)
-- Structured reports (10-100+ pages)
-
-### 57+ Languages Supported
-English, Spanish, German, French, Chinese, Japanese, Korean, Arabic, Portuguese, Italian, Dutch, Polish, Russian, and 40+ more.
-
-### Export to Any Format
-- **PDF** - LaTeX-quality formatting
-- **Microsoft Word** (.docx)
-- **LaTeX source** - for journals
-
-### 100% Free and Open Source
-MIT license. Self-host with your own API keys.
-
-### TL;DR and Digest Tools
-OpenDraft includes two standalone tools for quickly understanding any research paper:
-
-#### TL;DR: 5-Bullet Summary
-
-Generate a concise 5-bullet summary of any paper in seconds:
-
-```bash
-# As a subcommand
-opendraft tldr paper.pdf
-
-# Or standalone
-opendraft-tldr paper.pdf
-
-# Output to file
-opendraft tldr paper.pdf -o summary.md
-```
-
-Each bullet follows academic structure: thesis, key finding, method, implication, limitation.
-
-#### Digest: 60-Second Audio Briefing
-
-Generate a podcast-style audio summary you can listen to:
-
-```bash
-# Generate script + audio
-opendraft digest paper.pdf
-
-# Choose a different voice (rachel, adam, josh, elli, bella)
-opendraft digest paper.pdf --voice adam
-
-# Script only (no audio)
-opendraft digest paper.pdf --no-audio
-
-# Specify output directory
-opendraft digest paper.pdf -o output/
-```
-
-**Requirements:**
-- Digest audio requires an [ElevenLabs API key](https://elevenlabs.io/) set as `ELEVENLABS_API_KEY`
-- PDF reading requires the optional `pdf` extra: `pip install opendraft[pdf]`
-
-Both tools work with any academic paper (PDF, Markdown, or plain text), not just OpenDraft-generated documents.
-
----
-
-## Data Fetching
-
-Fetch research data from major statistical APIs directly into your workflow:
-
-```bash
-# Search for indicators
-opendraft data search GDP
-
-# Fetch World Bank data
-opendraft data worldbank NY.GDP.MKTP.CD --countries USA;DEU --start 2020 --end 2023
-
-# Fetch EU statistics (Eurostat)
-opendraft data eurostat nama_10_gdp
-
-# Fetch Our World in Data datasets
-opendraft data owid covid-19
-```
-
-**Supported providers:**
-- **World Bank** - Development indicators (GDP, population, education, health)
-- **Eurostat** - European Union statistics
-- **Our World in Data** - Open research datasets
-
-Data is saved as CSV files for use in your research.
-
----
-
-## Draft Revision
-
-Revise existing drafts with AI assistance:
-
-```bash
-# Revise a draft with natural language instructions
-opendraft revise ./output "Make the introduction longer and add more context"
-
-# The revised draft is saved as draft_v2.md (with PDF/DOCX exports)
-```
-
-Features:
-- Auto-detects draft files in output folders
-- Preserves all citations during revision
-- Automatic versioning (v2, v3, v4...)
-- Quality scoring before/after
-- PDF and DOCX export of revised version
-
----
-
-## Research Expose Mode
-
-Generate a quick research overview instead of a full draft:
-
-```bash
-opendraft "Neural Networks in Healthcare" --expose
-```
-
-This produces a research expose with:
-- **Research Sources Overview** - Number of sources, publication years, key journals
-- **Key Research Teams** - Major authors and research groups in the field
-- **Structured Outline** - Chapter/section structure for a full paper
-- **Complete Bibliography** - All sources with DOIs and journal info
-- **Next Steps** - Guidance for developing into a full draft
-
-Use expose mode when you want to:
-- Quickly scope a research topic
-- Validate there's enough literature
-- Get a structured starting point
-- Review sources before committing to a full draft
-
-Expose mode is ~3x faster than full draft generation.
-
----
-
-## TL;DR Mode
-
-Generate a 5-bullet summary of any academic paper in seconds:
-
-```bash
-# Summarize a PDF
-opendraft tldr paper.pdf
-
-# Summarize a markdown file
-opendraft tldr draft.md
-
-# Save to file
-opendraft tldr paper.pdf --output summary.md
-```
-
-Output:
-```
-📄 TL;DR: paper.pdf
-
-• Main finding: Neural networks improve diagnostic accuracy by 23%
-• Method: Retrospective analysis of 50,000 patient records
-• Key limitation: Single-center study, needs external validation
-• Implication: AI-assisted diagnosis could reduce misdiagnosis rates
-• Future work: Multi-center trials planned for 2025
-```
-
-Works with any PDF, Markdown, or text file.
-
----
-
-## Audio Digest
-
-Generate a 60-second audio summary using ElevenLabs TTS:
-
-```bash
-# Generate audio digest (requires ElevenLabs API key)
-opendraft digest paper.pdf
-
-# Choose a voice
-opendraft digest paper.pdf --voice adam
-
-# Available voices: rachel (default), adam, josh, elli, bella
-```
-
-Output: `paper_digest.mp3` - a professional narration summarizing the key points.
-
-**Setup:** Set `ELEVENLABS_API_KEY` in your environment or `.env` file.
-
----
-
-## Use it as a Claude Skill
-
-This engine also exists as a Skill, for agents that read Skills. Claude Code is one.
-The bundle lives in this repo at [`skills/autonomous-research/`](skills/autonomous-research/),
-kept identical to [getedgehq/skills](https://github.com/getedgehq/skills/tree/main/autonomous-research)
-by `scripts/sync_skill.sh` and a CI check.
-
-```bash
-npx skills add federicodeponte/opendraft --skill autonomous-research
-```
-
-**Get it on Edge: [getedge.cc/skills/autonomous-research](https://getedge.cc/skills/autonomous-research/?utm_source=github&utm_medium=readme&utm_campaign=opendraft)**
-
-Then say `Write a paper on <topic>` and the agent runs the pipeline itself.
-
-**It is a port, not a wrapper.** It does not call this Python engine and it does
-not talk to any hosted service. The eighteen stages are eighteen markdown prompts
-the agent executes in order, plus five standard-library Python scripts for the
-parts a language model must not do by hand: source lookup, deterministic citation
-compilation, an integrity gate, assembly and export. No API key, no account, and
-no model of ours in the loop, because the agent reading the Skill is the model.
-Every stage is a file you can open and edit.
-
-**What differs from the engine in this repository.** The Skill queries Crossref,
-OpenAlex and DataCite only, with no Semantic Scholar client, so the multi-source
-confirmation rule described in [Citation verification](#citation-verification) is
-not the rule it applies. Its gate is narrower and stricter in a different place:
-every DOI it prints resolved at Crossref or DataCite, and `citations.py compile`
-refuses to render a bibliography containing one that did not, naming the offender
-and exiting nonzero. It has no hosted run history, and export goes through pandoc
-rather than this repository's PDF pipeline.
-
-**What carries over.** Claim-to-source checking is stage 11, a prompt rather than
-a service call, and it still starts from the position that DOI resolution proves
-a record exists and nothing more. Unsourced statistics are swept for separately,
-because a fabricated number sitting beside a perfectly valid citation passes an
-existence check by design. Human review is required for the same reasons it is
-required here.
-
-The Skill is published under Apache-2.0; the OpenDraft-derived material keeps its
-MIT notice in the bundle's `THIRD_PARTY_NOTICES.md`, and its `DERIVATION.json`
-records the SHA-256 of every shipped file and maps each prompt and script back to
-its origin here.
-
----
+Then ask: `Write a paper on <topic>`. The skill lives in [`skills/autonomous-research/`](skills/autonomous-research/); it runs inside your agent and does not call this Python engine.
 
 ## Run the engine yourself
-
-### Prerequisites
-- Python 3.10+
-- A free [Gemini API key](https://makersuite.google.com/app/apikey)
-
-### 1. Clone & Install
 
 ```bash
 git clone https://github.com/federicodeponte/opendraft.git
 cd opendraft
-pip install -r requirements.txt
+pip install -e ./engine
+cp .env.example engine/.env          # add your key
+opendraft "Your topic"
 ```
 
-### 2. Configure
+| Variable | Required | Purpose |
+|:---|:---|:---|
+| `GOOGLE_API_KEY` | One key required | Gemini (default provider) |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | Optional | Claude or OpenAI, with `AI_PROVIDER=claude` or `openai` |
+| `ENABLE_SEMANTIC_SCHOLAR` | Optional | Set `false` if Semantic Scholar rate-limits you |
 
-Create a `.env` file with your API key:
-```bash
-GOOGLE_API_KEY=your-gemini-api-key
-```
+All settings are listed in [`.env.example`](.env.example).
 
-### 3. Generate a Draft
+## How it works
 
-```python
-from engine.draft_generator import DraftGenerator
-
-generator = DraftGenerator()
-draft = generator.generate(
-    topic="The Impact of AI on Academic Research",
-    paper_type="master",  # research_paper, bachelor, master, phd
-    language="en"
-)
-
-# Export to different formats
-draft.to_pdf("thesis.pdf")
-draft.to_docx("thesis.docx")
-draft.to_latex("thesis.tex")
-```
-
-See `engine/README.md` for detailed API documentation.
-
----
-
-## Which AI Model Should I Use?
-
-| Model | Provider | Configuration |
-|-------|----------|---------------|
-| **Gemini 3.1 Pro Preview** | Gemini (default) | `AI_PROVIDER=gemini` |
-| Gemini 3 Flash Preview | Gemini | `GEMINI_MODEL=gemini-3-flash-preview` |
-| GPT-4.1 Nano | OpenAI | `AI_PROVIDER=openai` and `OPENAI_API_KEY` |
-| Claude Sonnet 4.6 | Anthropic | `AI_PROVIDER=claude` and `ANTHROPIC_API_KEY` |
-
-Set `OPENAI_MODEL` or `ANTHROPIC_MODEL` to use another model supported by your API endpoint.
-
----
-
-## Example Output
-
-See what OpenDraft produces:
-
-Sample drafts with their DOI-checked bibliographies are in the [`examples/`](examples/) directory.
-
-Generated in ~15 minutes, with every citation's DOI checked against CrossRef, OpenAlex and Semantic Scholar.
-
----
-
-## Project Structure
-
-```
-opendraft/
-├── engine/
-│   ├── draft_generator.py    # Main 19-agent pipeline
-│   ├── config.py             # Model & API settings
-│   ├── prompts/              # Agent instruction templates
-│   ├── utils/                # Citations, export, helpers
-│   └── opendraft/            # Core agent modules
-├── examples/                 # Sample research outputs
-├── requirements.txt          # Python dependencies
-└── README.md
-```
-
----
-
-## Common Questions
-
-### Is OpenDraft free?
-**Yes.** OpenDraft is 100% free and open source under the MIT license. You self-host it with your own model API keys (a typical draft costs ~$0.35–$3 in API fees).
-
-### How does OpenDraft handle citations?
-OpenDraft confirms each citation's DOI against at least two of CrossRef, OpenAlex and Semantic Scholar and drops the ones it cannot confirm. See [Citation verification](#citation-verification) for exactly what that establishes.
-
-### Can OpenDraft write a full PhD dissertation?
-**OpenDraft can generate a complete first draft** of a PhD dissertation (100+ pages) in 10–20 minutes. However, it is a drafting assistant, not an autonomous author. You must review, edit, and add your own analysis before submission.
-
-### Does OpenDraft make up citations?
-**Citations are not invented, and the engine records exactly how each one was established.** By default a citation must have its DOI held by at least two of CrossRef, OpenAlex and Semantic Scholar; single-source results are dropped. One of the two may be the database that returned the candidate, which is taken at its word rather than re-queried; `verification_independent_sources` records the ones actually re-queried. The LLM-asserted fallback is off by default and, if you switch it on, everything it produces is permanently tagged `llm_unverified`. Note what this proves: that the cited work is registered and indexed, not that it supports the sentence it is attached to. A separate claim-level check covers that, and its verdicts are LLM judgements for a human reviewer. See [Citation verification](#citation-verification).
-
-### How long does it take to generate a thesis with OpenDraft?
-**10–20 minutes** for a full master's thesis (50–80 pages). A shorter research paper takes 5–10 minutes.
-
-### What file formats does OpenDraft export to?
-**PDF, Microsoft Word (.docx), and LaTeX source.**
-
-### Can I use OpenDraft for commercial purposes?
-**Yes.** The MIT license permits commercial use, modification, and distribution without restriction.
-
----
+19 agents work in six phases: research, structure, compose, validate, refine, enhance. A source stays only if at least two of Crossref, OpenAlex and Semantic Scholar hold its DOI. That proves the work exists, not that every claim about it is right, so a second check judges whether each source fits its claim. Details: [citation verification](docs/citation-verification.md) · [pipeline](docs/PIPELINE.md) · [methodology](https://opendraft.xyz/methodology).
 
 ## FAQ
 
-### Is this really free?
+**What is OpenDraft?**
+An open-source agent system that researches and writes papers with verified citations. MIT licensed.
 
-**Yes.** OpenDraft is 100% open source under the MIT license. Self-host with your own API keys. A typical research draft costs ~$0.35-$3 depending on the model.
+**Is OpenDraft free?**
+Yes. You pay only your model provider, about $0.35 to $3 per draft.
 
-### How are citations verified?
+**How are citations verified?**
+A source stays only if at least two of Crossref, OpenAlex and Semantic Scholar hold its DOI. That proves it exists, not that every claim about it is right.
 
-OpenDraft confirms each citation's DOI in at least two of CrossRef, OpenAlex and Semantic Scholar before keeping it, and drops single-source or unconfirmed results.
+**How long does a draft take, and in what formats?**
+Usually 10 to 20 minutes. Export to PDF, Word and LaTeX.
 
-### Can I use this for my university thesis?
+**Who has cited OpenDraft?**
+A peer-reviewed NIH paper (Talukder et al., 2026), next to Stanford's STORM, and the NUS survey *AI for Auto-Research* (Kong et al., 2026).
 
-OpenDraft generates **research drafts**—starting points you should review, edit, and build upon. Always:
-- Verify all sources yourself
-- Add your own analysis and insights
-- Check your institution's AI policy
-
-### Why a multi-agent architecture?
-
-OpenDraft uses **19 specialized agents**—one for research, one for citations, one for structure, one for export, etc.—instead of a single general-purpose prompt.
-
-### Can I use this commercially?
-
-**Yes.** MIT license allows commercial use. Build products, offer services, modify the code—no restrictions.
-
----
-
-## Tech Stack
-
-- **Engine:** Python 3.10+, multi-agent orchestration
-- **Models:** Google Gemini 3, Anthropic Claude Sonnet 4.5 / Opus 4.5, OpenAI GPT-5.5 / GPT-5
-- **Citations:** CrossRef API, OpenAlex API, Semantic Scholar API
-- **Export:** WeasyPrint (PDF), python-docx (Word)
-
----
+**Are the drafts ready to submit?**
+No. They are starting points: review and edit before use, and follow your institution's policy on disclosure.
 
 ## Contributing
 
-Contributions welcome!
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md), ask in [Discussions](https://github.com/federicodeponte/opendraft/discussions), and read the [changelog](CHANGELOG.md).
 
-**Ideas:**
-- Add new AI model support
-- Improve citation accuracy
-- Add export formats
-- Translate prompts
+## License
 
-Maintainer workflow docs:
-- Push/auth runbook: `docs/MAINTAINER_PUSH_RUNBOOK.md`
-- Automated push preflight: `scripts/push-preflight.sh`
-
----
-
-## Links
-
-- 🏠 **Project home, docs and examples:** [opendraft.xyz](https://opendraft.xyz)
-- 🌐 **Hosted version:** [openpaper.dev](https://openpaper.dev)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/federicodeponte/opendraft/discussions)
-- 🐛 **Issues:** [Report Bug](https://github.com/federicodeponte/opendraft/issues)
-- 🗒️ **Changelog:** [CHANGELOG.md](CHANGELOG.md)
-- ⚖️ **Comparison:** [OpenDraft vs STORM / Co-STORM](docs/opendraft-vs-storm.md)
-- 📜 **License:** [MIT](LICENSE)
-
----
-
-## Summary
-
-**OpenDraft** is a free, open-source Python engine for generating academic research drafts. It uses 19 specialized AI agents, and by default keeps a citation only once its DOI is held by at least two of CrossRef, OpenAlex and Semantic Scholar.
-
----
-
-<p align="center">
-  <b>If OpenDraft helps your research, please star the repo!</b><br><br>
-  <a href="https://github.com/federicodeponte/opendraft">⭐ Star on GitHub</a>
-</p>
+MIT, see [LICENSE](LICENSE). To cite OpenDraft, use [CITATION.cff](CITATION.cff) ("Cite this repository" on GitHub).
