@@ -6,14 +6,17 @@
     "opendraft": "bin/opendraft.js"
   },
   "keywords": [
-    "research",
-    "paper",
-    "thesis",
-    "ai",
-    "academic",
-    "writing",
-    "citations",
-    "generator"
+    "research-paper-generator",
+    "thesis-writer",
+    "literature-review",
+    "academic-writing",
+    "citation-verification",
+    "verified-citations",
+    "crossref",
+    "openalex",
+    "semantic-scholar",
+    "agents",
+    "open-source"
   ],
   "author": "Federico De Ponte",
   "license": "MIT",

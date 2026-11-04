@@ -12,15 +12,16 @@ authors = [
     {name = "Federico De Ponte", email = "federico@opendraft.xyz"}
 ]
 keywords = [
-    "academic writing",
-    "thesis generator",
-    "research paper",
-    "AI writing",
-    "citation verification",
+    "research paper generator",
+    "thesis writer",
     "literature review",
-    "multi-agent AI",
-    "ChatGPT alternative",
-    "dissertation",
+    "academic writing",
+    "citation verification",
+    "verified citations",
+    "crossref",
+    "openalex",
+    "semantic scholar",
+    "agents",
     "open source"
 ]
 classifiers = [

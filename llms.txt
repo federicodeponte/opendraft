@@ -8,7 +8,7 @@
 - **Engine**: 19 specialized agents — research, structure, writing, citation verification, polish, export
 - **Sources**: CrossRef, OpenAlex, Semantic Scholar. arXiv is not queried as a database.
 - **Export**: PDF, Microsoft Word (.docx), LaTeX source
-- **Output**: 5–80+ pages, 10k–20k+ words, 30–50+ confirmed citations per draft
+- **Output**: 5–80+ pages, 10k–20k+ words; the public sample draft has 60 pages and 40+ citations
 - **Time**: 10–20 minutes for a full draft
 - **Languages**: 57+ including English, German, Spanish, French, Chinese, Japanese
 - **Cost**: Free (self-hosted with your own Gemini/OpenAI/Claude API key; a draft costs about $0.35 with Gemini Flash to about $3 with Claude Opus in API fees)
