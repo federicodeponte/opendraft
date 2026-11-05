@@ -76,6 +76,10 @@ def setup_model(model_override: Optional[str] = None) -> Any:
         client = OpenAI(api_key=config.openai_api_key, base_url=config.openai_base_url)
         return OpenAIModelWrapper(client, model_name, temperature)
 
+    if config.model.provider == "litellm":
+        from .provider_adapters import LiteLLMModelWrapper
+        return LiteLLMModelWrapper(model_name, temperature, config.litellm_api_key, config.litellm_base_url)
+
     client = genai.Client(api_key=config.google_api_key)
     return GeminiModelWrapper(client=client, model_name=model_name, temperature=temperature)
 

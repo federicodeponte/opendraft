@@ -40,7 +40,7 @@ class ModelConfig:
 
     Supports Gemini, OpenAI and Claude models with configurable parameters.
     """
-    provider: Literal['gemini', 'claude', 'openai'] = field(
+    provider: Literal['gemini', 'claude', 'openai', 'litellm'] = field(
         default_factory=lambda: os.getenv('AI_PROVIDER', 'gemini')
     )
     model_name: str = field(default_factory=lambda: (
@@ -48,6 +48,8 @@ class ModelConfig:
         if os.getenv('AI_PROVIDER') == 'claude'
         else os.getenv('OPENAI_MODEL', 'gpt-4.1-nano')
         if os.getenv('AI_PROVIDER') == 'openai'
+        else os.getenv('LITELLM_MODEL', '')
+        if os.getenv('AI_PROVIDER') == 'litellm'
         else os.getenv('GEMINI_MODEL', 'gemini-3.1-pro-preview')
     ))
     temperature: float = 0.7
@@ -69,8 +71,13 @@ class ModelConfig:
                 f"Valid options: {', '.join(valid_gemini_models)}"
             )
 
-        if self.provider not in ('gemini', 'openai', 'claude'):
+        if self.provider not in ('gemini', 'openai', 'claude', 'litellm'):
             raise ValueError(f"Unsupported AI provider: {self.provider}")
+        if self.provider == 'litellm' and not self.model_name.strip():
+            raise ValueError(
+                "LITELLM_MODEL is required for the litellm provider, e.g. "
+                "anthropic/claude-sonnet-4-6 or vertex_ai/gemini-2.5-flash"
+            )
         if not self.model_name.strip():
             raise ValueError(f"Model name required for {self.provider}")
 
@@ -142,6 +149,11 @@ class AppConfig:
     openai_api_key: str = field(default_factory=lambda: os.getenv('OPENAI_API_KEY', ''))
     anthropic_base_url: str = field(default_factory=lambda: os.getenv('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'))
     openai_base_url: str = field(default_factory=lambda: os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1'))
+    # LiteLLM resolves each provider's own credentials from its usual environment
+    # (ANTHROPIC_API_KEY, OPENAI_API_KEY, the AWS/Google variables, ...). These two are
+    # optional overrides, for a key to force or a gateway/proxy endpoint to route through.
+    litellm_api_key: str = field(default_factory=lambda: os.getenv('LITELLM_API_KEY', ''))
+    litellm_base_url: str = field(default_factory=lambda: os.getenv('LITELLM_API_BASE', ''))
 
     # Sub-configurations
     model: ModelConfig = field(default_factory=ModelConfig)
@@ -188,7 +200,8 @@ class AppConfig:
             return bool(self.anthropic_api_key)
         if self.model.provider == 'openai':
             return bool(self.openai_api_key)
-        return False
+        # LiteLLM reads each provider's own credentials, so it cannot be checked here.
+        return self.model.provider == 'litellm'
 
 
 # Global configuration instance - lazy loaded
